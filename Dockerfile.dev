@@ -1,0 +1,17 @@
+# ---------- Development Dockerfile ----------
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies (including devDependencies)
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Copy source code
+COPY . .
+
+ENV NODE_ENV=development
+EXPOSE 3000
+
+# nodemon watches for file changes and restarts the server
+CMD ["npx", "nodemon", "server.js"]
