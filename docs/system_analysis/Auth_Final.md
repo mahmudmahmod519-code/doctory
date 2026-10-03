@@ -40,9 +40,7 @@ User chooses:
 Sign Up Options Page
         ↓
    ┌────┴───────────────┐
-   ↓                    ↓
-Continue with       Continue with
-Google*             Email
+                 Continue with  Email
                          ↓
                  Choose account type
                     /          \
@@ -52,7 +50,6 @@ Google*             Email
           Patient Register   Doctor Register
 ```
 
-\* **Google Sign Up:** وجود زر Google هنا هو جزء من الـ UI المطلوب، لكن الـ current API specification لا يحتوي على Google OAuth endpoint. لذلك الـ Google authentication endpoint/flow لازم يتحدد في الـ API specification قبل التنفيذ.
 
 ## 0.3 Choose Account Type
 
