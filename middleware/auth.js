@@ -10,7 +10,6 @@ module.exports = async (req, res, next) => {
     }
 
     if (!token) {
-        // For API routes, return JSON; for render routes, redirect
         if (req.path.startsWith('/api/')) {
             return res.status(401).json({ status: "error", message: "غير مصرح - يجب تسجيل الدخول" });
         }
