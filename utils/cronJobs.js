@@ -1,20 +1,33 @@
 const cron = require('node-cron');
-const AppDataSource = require('../config/data-source');
 
-cron.schedule('0 0 * * *', async () => {
-    console.log('🕒 بدء مهمة تنظيف السلات المهجورة...');
-
+async function cleanupExpiredRefreshTokens() {
     try {
-        const result = await AppDataSource.query(
-            `DELETE FROM orders 
-             WHERE order_status = 'cart' 
-             AND created_at < NOW() - INTERVAL 24 HOUR`
-        );
-
-        console.log(`✅ تم تنظيف ${result.affectedRows || 0} سلة مهجورة بنجاح.`);
+        const RefreshToken = require('../models/RefreshToken.entity.js');
+        const deleted = await RefreshToken.deleteMany({ expires_at: { $lt: new Date() } });
+        if (deleted.deletedCount > 0) {
+            console.log(`🧹 تم حذف ${deleted.deletedCount} refresh token منتهية.`);
+        }
     } catch (error) {
-        console.error('❌ خطأ في مهمة الـ Cron Job:', error);
+        console.error('❌ خطأ في تنظيف الـ Refresh Tokens:', error.message);
     }
-});
+}
 
-console.log('✅ Cron Jobs تم تشغيلها بنجاح');
+/**
+ * TODO(Phase 4): تنظيف الحجوزات/السلات المهجورة بعد 24 ساعة.
+ * سيتم التنفيذ باستخدام Booking.entity.js:
+ *   await Booking.deleteMany({ status: 'pending', createdAt: { $lt: cutoff } });
+ */
+async function cleanupAbandonedBookings() {
+}
+
+// جدولة كل المهام
+function registerCronJobs() {
+    cron.schedule('0 */6 * * *', cleanupExpiredRefreshTokens);
+    console.log('✅ Cron Jobs تم تشغيلها بنجاح');
+}
+
+module.exports = {
+    registerCronJobs,
+    cleanupExpiredRefreshTokens,
+    cleanupAbandonedBookings,
+};

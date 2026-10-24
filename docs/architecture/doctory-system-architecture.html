@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<title>Doctory — System Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --clients-fill: #e8f2fd;
+    --clients-border: #2f6fb5;
+    --clients-text: #14406f;
+    --api-fill: #1a4d8f;
+    --api-border: #12386b;
+    --api-text: #ffffff;
+    --svc-fill: #d9f2ef;
+    --svc-border: #17877a;
+    --svc-text: #0d5b52;
+    --data-fill: #dff2df;
+    --data-border: #2e7d32;
+    --data-text: #1d5220;
+    --ext-fill: #ede7f6;
+    --ext-border: #5e35b1;
+    --ext-text: #3d1f7a;
+    --planned-fill: #f4f5f7;
+    --planned-border: #9aa0a6;
+    --planned-text: #5f6368;
+    --ink: #1f2933;
+    --muted: #6b7280;
+    --danger: #c62828;
+    --danger-fill: #fdecea;
+  }
+
+  body {
+    font-family: "Segoe UI", "Noto Sans Arabic", Tahoma, Arial, sans-serif;
+    background: #ffffff;
+    color: var(--ink);
+    padding: 28px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .canvas {
+    position: relative;
+    width: 1560px;
+    margin: 0 auto;
+  }
+
+  /* ---------- SVG arrow overlay ---------- */
+  .wires {
+    position: absolute;
+    inset: 0;
+    width: 1560px;
+    height: 1290px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .wires path, .wires line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .wire { stroke: #4b5563; stroke-width: 2.2; }
+  .wire-dash { stroke: #9aa0a6; stroke-width: 2.2; stroke-dasharray: 8 6; }
+  .wire-ext { stroke: #5e35b1; stroke-width: 2.4; }
+  .wire-plan { stroke: #9aa0a6; stroke-width: 2.4; stroke-dasharray: 8 6; }
+  .wire-bus  { stroke: #4b5563; stroke-width: 2.2; }
+  .wire-mail { stroke: #5e35b1; stroke-width: 2.4; }
+
+  /* arrow heads */
+  .arrow-head { fill: #4b5563; }
+  .arrow-head-dash { fill: #9aa0a6; }
+  .arrow-head-ext { fill: #5e35b1; }
+  .arrow-head-plan { fill: #9aa0a6; }
+
+  /* ---------- title ---------- */
+  .title-block { position: absolute; left: 70px; top: 30px; z-index: 3; }
+  .title-block h1 {
+    font-size: 46px; font-weight: 800; letter-spacing: -0.5px;
+    color: #12386b; line-height: 1;
+  }
+  .title-block .arabic {
+    font-size: 27px; font-weight: 700; color: #17877a;
+    margin-top: 6px; direction: rtl; text-align: left;
+  }
+  .title-block .sub {
+    font-size: 15px; color: var(--muted); margin-top: 9px; font-weight: 500;
+  }
+  .title-block .rule {
+    width: 190px; height: 4px; border-radius: 2px;
+    background: linear-gradient(90deg, #1a4d8f, #17877a); margin-top: 12px;
+  }
+
+  /* ---------- layer captions ---------- */
+  .layer-cap {
+    position: absolute; z-index: 3;
+    font-size: 11.5px; font-weight: 800; letter-spacing: 1.6px;
+    color: #94a3b8; text-transform: uppercase;
+  }
+  .layer-cap span { color: #64748b; }
+
+  /* ---------- boxes ---------- */
+  .box {
+    position: absolute; z-index: 3;
+    border-radius: 16px;
+    border: 2px solid;
+    text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 12px 14px;
+  }
+  .box .h {
+    font-size: 17px; font-weight: 750; line-height: 1.2;
+  }
+  .box .s {
+    font-size: 12.5px; font-weight: 500; line-height: 1.42; margin-top: 7px;
+    opacity: .88;
+  }
+  .box .s code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 11.5px;
+  }
+
+  /* clients */
+  .box.clients {
+    background: var(--clients-fill);
+    border-color: var(--clients-border);
+    color: var(--clients-text);
+    box-shadow: 0 3px 10px rgba(47,111,181,.13);
+  }
+  .box.clients .h { font-size: 18px; }
+  .box.clients .s { font-size: 12.5px; }
+
+  /* api gateway */
+  .box.api {
+    background: var(--api-fill);
+    border-color: var(--api-border);
+    color: var(--api-text);
+    box-shadow: 0 5px 16px rgba(26,77,143,.26);
+  }
+  .box.api .h { font-size: 22px; letter-spacing: .2px; }
+  .box.api .s { color: #cfe2fb; }
+
+  .pills { display: flex; gap: 9px; margin-top: 13px; flex-wrap: nowrap; }
+  .pill {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.34);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  }
+  .pill .dot { opacity: .65; margin-right: 4px; }
+
+  /* services */
+  .box.svc {
+    background: var(--svc-fill);
+    border-color: var(--svc-border);
+    color: var(--svc-text);
+    box-shadow: 0 3px 10px rgba(23,135,122,.14);
+  }
+  .box.svc .h { font-size: 16.5px; }
+
+  /* data */
+  .box.data {
+    background: var(--data-fill);
+    border-color: var(--data-border);
+    color: var(--data-text);
+    box-shadow: 0 3px 10px rgba(46,125,50,.14);
+    align-items: stretch; justify-content: flex-start; text-align: left;
+    padding: 14px 16px;
+  }
+  .box.data .h { font-size: 18px; text-align: left; }
+  .box.data .s { text-align: left; }
+
+  .colls {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 4px 10px; margin-top: 11px;
+  }
+  .colls span {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 11px; font-weight: 600; color: #276b2b;
+    background: rgba(255,255,255,.6);
+    border: 1px solid rgba(46,125,50,.24);
+    border-radius: 5px; padding: 3px 6px; white-space: nowrap;
+  }
+
+  /* planned / future */
+  .box.planned {
+    background: var(--planned-fill);
+    border: 2px dashed var(--planned-border);
+    color: var(--planned-text);
+    box-shadow: none;
+  }
+  .box.planned .h { font-size: 16.5px; }
+
+  .badge {
+    display: inline-block; margin-top: 9px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .7px;
+    text-transform: uppercase;
+    padding: 4px 11px; border-radius: 999px;
+  }
+  .badge.gray { background: #e4e6e9; border: 1px solid var(--planned-border); color: #5f6368; }
+  .badge.red  { background: var(--danger-fill); border: 1px solid #f2b8b5; color: var(--danger); }
+
+  /* external implemented */
+  .box.ext {
+    background: var(--ext-fill);
+    border-color: var(--ext-border);
+    color: var(--ext-text);
+    box-shadow: 0 3px 10px rgba(94,53,177,.14);
+  }
+  .box.ext .h { font-size: 17px; }
+  .box.ext .s { font-size: 12px; }
+
+  .ext-list { margin-top: 9px; text-align: left; width: 100%; }
+  .ext-list div {
+    font-size: 11.5px; font-weight: 600; color: #4c2a85;
+    padding: 3px 0 3px 15px; position: relative;
+  }
+  .ext-list div::before {
+    content: "▸"; position: absolute; left: 0; color: #7c5cb5; font-weight: 700;
+  }
+
+  .note {
+    margin-top: 9px; font-size: 10.5px; line-height: 1.45;
+    background: rgba(255,255,255,.66); border: 1px solid rgba(94,53,177,.26);
+    border-radius: 7px; padding: 6px 9px; text-align: left; font-weight: 600;
+  }
+
+  /* no-sms badge row */
+  .nosms {
+    display: flex; align-items: center; gap: 7px;
+    margin-top: 10px; padding: 5px 11px 5px 8px;
+    background: var(--danger-fill); border: 1px solid #f2b8b5;
+    border-radius: 999px;
+  }
+  .nosms .txt {
+    font-size: 10.5px; font-weight: 800; letter-spacing: .5px;
+    text-transform: uppercase; color: var(--danger);
+  }
+
+  /* ---------- legend ---------- */
+  .legend {
+    position: absolute; z-index: 4;
+    left: 1210px; top: 28px; width: 292px;
+    background: #ffffff; border: 1.5px solid #d7dbe0; border-radius: 13px;
+    padding: 12px 14px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.07);
+  }
+  .legend .lg-title {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.4px;
+    text-transform: uppercase; color: #64748b; margin-bottom: 9px;
+  }
+  .legend .row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 7px;
+    font-size: 11.5px; font-weight: 600; color: #374151;
+  }
+  .legend .row:last-child { margin-bottom: 0; }
+  .swatch {
+    width: 30px; height: 15px; border-radius: 5px; flex: 0 0 30px;
+  }
+  .sw.solid-blue { background: #e8f2fd; border: 2px solid #2f6fb5; }
+  .sw.solid-teal { background: #d9f2ef; border: 2px solid #17877a; }
+  .sw.solid-green{ background: #dff2df; border: 2px solid #2e7d32; }
+  .sw.solid-dark { background: #1a4d8f; border: 2px solid #12386b; }
+  .sw.solid-purple{ background: #ede7f6; border: 2px solid #5e35b1; }
+  .sw.dashed     { background: #f4f5f7; border: 2px dashed #9aa0a6; }
+
+  .legend .divider {
+    height: 1px; background: #e5e7eb; margin: 9px 0;
+  }
+  .legend .mini {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 7px;
+    font-size: 11.5px; font-weight: 600; color: #374151;
+  }
+  .linekey { width: 30px; height: 0; border-top: 2.2px solid #4b5563; flex: 0 0 30px; }
+  .linekey.dash { border-top: 2.2px dashed #9aa0a6; }
+  .linekey.purple { border-top: 2.4px solid #5e35b1; }
+
+  /* wire labels */
+  .wlabel {
+    position: absolute; z-index: 5;
+    font-size: 10.5px; font-weight: 700; color: #6b7280;
+    background: #ffffff; padding: 2px 7px; border-radius: 5px;
+    border: 1px solid #e5e7eb; white-space: nowrap;
+  }
+  .wlabel.planned { color: #7b8189; border-style: dashed; border-color: #c8ccd1; }
+  .wlabel.mail { color: #5e35b1; border-color: #d5c8ee; background: #faf8ff; }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+
+  <!-- ================= SVG WIRES ================= -->
+  <svg class="wires" viewBox="0 0 1560 1290" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ah"   markerWidth="11" markerHeight="11" refX="9" refY="3.6" orient="auto">
+        <path class="arrow-head" d="M0,0 L10,3.6 L0,7.2 z"/>
+      </marker>
+      <marker id="ahd"  markerWidth="11" markerHeight="11" refX="9" refY="3.6" orient="auto">
+        <path class="arrow-head-dash" d="M0,0 L10,3.6 L0,7.2 z"/>
+      </marker>
+      <marker id="ahe"  markerWidth="11" markerHeight="11" refX="9" refY="3.6" orient="auto">
+        <path class="arrow-head-ext" d="M0,0 L10,3.6 L0,7.2 z"/>
+      </marker>
+      <marker id="ahp"  markerWidth="11" markerHeight="11" refX="9" refY="3.6" orient="auto">
+        <path class="arrow-head-plan" d="M0,0 L10,3.6 L0,7.2 z"/>
+      </marker>
+      <marker id="ahs" markerWidth="10" markerHeight="10" refX="2" refY="3.2" orient="auto">
+        <path class="arrow-head" d="M0,0 L8,3.2 L0,6.4 z"/>
+      </marker>
+    </defs>
+
+    <!-- L1 clients -> L2 API -->
+    <path class="wire" marker-end="url(#ah)" d="M370,320 L370,378"/>
+    <path class="wire" marker-end="url(#ah)" d="M780,320 L780,378"/>
+    <path class="wire" marker-end="url(#ah)" d="M1190,320 L1190,378"/>
+
+    <!-- L2 API -> L3 services (fan out) -->
+    <path class="wire" d="M780,530 L780,566"/>
+    <path class="wire" d="M232,566 L1327,566"/>
+    <path class="wire" marker-end="url(#ah)" d="M232,566 L232,608"/>
+    <path class="wire" marker-end="url(#ah)" d="M597,566 L597,608"/>
+    <path class="wire" marker-end="url(#ah)" d="M962,566 L962,608"/>
+    <path class="wire" marker-end="url(#ah)" d="M1327,566 L1327,608"/>
+
+    <!-- L3 services -> data bus -->
+    <path class="wire" d="M232,760 L232,800"/>
+    <path class="wire" d="M597,760 L597,800"/>
+    <path class="wire" d="M962,760 L962,800"/>
+    <path class="wire" d="M1327,760 L1327,800"/>
+
+    <!-- data bus -->
+    <path class="wire-bus" d="M232,800 L1327,800"/>
+
+    <!-- bus -> MongoDB (bidirectional) -->
+    <path class="wire" marker-end="url(#ah)" marker-start="url(#ah)" d="M545,800 L545,838"/>
+    <!-- bus -> Redis (bidirectional, planned/dashed) -->
+    <path class="wire-plan" marker-end="url(#ahp)" marker-start="url(#ahp)" d="M1235,800 L1235,838"/>
+
+    <!-- L2 API -> L5 AI Microservice (dashed, routed far left) -->
+    <path class="wire-plan" marker-end="url(#ahp)"
+          d="M230,455 L30,455 L30,1090 L104,1090"/>
+
+    <!-- L3 Notification -> L5 Nodemailer (solid, routed far right) -->
+    <path class="wire-mail" marker-end="url(#ahe)"
+          d="M757,700 L1520,700 L1520,1090 L1296,1090"/>
+  </svg>
+
+  <!-- ================= TITLE ================= -->
+  <div class="title-block">
+    <h1>Doctory</h1>
+    <div class="arabic">نظام عيادات ذكي</div>
+    <div class="sub">AI-Powered Smart Clinic System &nbsp;·&nbsp; System Architecture Diagram</div>
+    <div class="rule"></div>
+  </div>
+
+  <!-- ================= LEGEND ================= -->
+  <div class="legend">
+    <div class="lg-title">Legend</div>
+    <div class="row"><span class="sw solid-blue"></span> Clients (light blue)</div>
+    <div class="row"><span class="sw solid-dark"></span> API Gateway (dark blue)</div>
+    <div class="row"><span class="sw solid-teal"></span> Core Services (teal)</div>
+    <div class="row"><span class="sw solid-green"></span> Data Layer (green)</div>
+    <div class="row"><span class="sw solid-purple"></span> External Service (solid = live)</div>
+    <div class="row"><span class="sw dashed"></span> Planned / Future (gray dashed)</div>
+    <div class="divider"></div>
+    <div class="mini"><span class="linekey"></span> Solid line = implemented flow</div>
+    <div class="mini"><span class="linekey dash"></span> Dashed line = planned flow</div>
+    <div class="mini"><span class="linekey purple"></span> External integration</div>
+  </div>
+
+  <!-- ================= LAYER 1 — CLIENTS ================= -->
+  <div class="layer-cap" style="left:195px; top:186px;">Layer 1 · <span>Clients</span></div>
+
+  <div class="box clients" style="left:195px; top:210px; width:350px; height:110px;">
+    <div class="h">Patient Mobile App</div>
+    <div class="s">Flutter &nbsp;·&nbsp; iOS &amp; Android</div>
+    <div class="s">Patient journeys &amp; queue</div>
+  </div>
+
+  <div class="box clients" style="left:605px; top:210px; width:350px; height:110px;">
+    <div class="h">Doctor Web Portal</div>
+    <div class="s">EJS Server-Side Rendering</div>
+    <div class="s">Bookings, queue, clinical work</div>
+  </div>
+
+  <div class="box clients" style="left:1015px; top:210px; width:350px; height:110px;">
+    <div class="h">Admin Web Portal</div>
+    <div class="s">EJS Server-Side Rendering</div>
+    <div class="s">Verification, users, audit</div>
+  </div>
+
+  <!-- ================= LAYER 2 — API GATEWAY ================= -->
+  <div class="layer-cap" style="left:230px; top:356px;">Layer 2 · <span>API Gateway</span></div>
+
+  <div class="box api" style="left:230px; top:380px; width:1100px; height:150px;">
+    <div class="h">Express.js REST API</div>
+    <div class="s">Single entry point · all clients speak JSON over HTTPS</div>
+    <div class="pills">
+      <div class="pill"><span class="dot">🔐</span>Auth Middleware (JWT Cookies)</div>
+      <div class="pill"><span class="dot">🛡️</span>RBAC Middleware</div>
+      <div class="pill"><span class="dot">🚦</span>Rate Limiter</div>
+      <div class="pill"><span class="dot">✅</span>Validation (Joi)</div>
+      <div class="pill"><span class="dot">📝</span>Security Logger</div>
+    </div>
+  </div>
+
+  <!-- ================= LAYER 3 — CORE SERVICES ================= -->
+  <div class="layer-cap" style="left:72px; top:586px;">Layer 3 · <span>Core Services</span></div>
+
+  <div class="box svc" style="left:72px; top:610px; width:320px; height:150px;">
+    <div class="h">Auth Service</div>
+    <div class="s">JWT access + refresh tokens<br>2FA (TOTP) · password reset<br>Role &amp; status enforcement</div>
+  </div>
+
+  <div class="box svc" style="left:437px; top:610px; width:320px; height:150px;">
+    <div class="h">Booking &amp; Queue Service</div>
+    <div class="s"><code>bookings</code> · <code>booking_items</code><br>Confirm / Decline logic<br>Queue order &amp; wait estimation</div>
+  </div>
+
+  <div class="box svc" style="left:802px; top:610px; width:320px; height:150px;">
+    <div class="h">Notification Service</div>
+    <div class="s">In-app notifications + critical emails only</div>
+    <div class="nosms">
+      <svg width="15" height="15" viewBox="0 0 24 24" aria-label="No SMS">
+        <path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"
+              fill="none" stroke="#c62828" stroke-width="2" stroke-linejoin="round"/>
+        <line x1="2" y1="2" x2="22" y2="22" stroke="#c62828" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <span class="txt">No SMS</span>
+    </div>
+    <div class="s" style="font-size:10.5px; margin-top:6px;">In-App + Critical Email Only</div>
+  </div>
+
+  <div class="box svc" style="left:1167px; top:610px; width:320px; height:150px;">
+    <div class="h">Audit &amp; Compliance Service</div>
+    <div class="s"><code>audit_logs</code> · <code>deletion_requests</code><br>Law 151 / 2020 (Egypt)<br>Soft delete &amp; restore</div>
+  </div>
+
+  <!-- ================= LAYER 4 — DATA LAYER ================= -->
+  <div class="layer-cap" style="left:120px; top:816px;">Layer 4 · <span>Data Layer</span></div>
+
+  <div class="box data" style="left:120px; top:840px; width:880px; height:200px;">
+    <div class="h">MongoDB <span style="font-weight:600; font-size:13px; opacity:.75;">(Mongoose ODM)</span></div>
+    <div class="s" style="margin-top:4px;">11 collections · <code style="font-size:11px;">ObjectId</code> references · soft delete · indexed</div>
+    <div class="colls">
+      <span>users</span>
+      <span>doctor_portfolios</span>
+      <span>doctor_works</span>
+      <span>bookings</span>
+      <span>booking_items</span>
+      <span>reviews</span>
+      <span>reports</span>
+      <span>audit_logs</span>
+      <span>deletion_requests</span>
+      <span>refresh_tokens</span>
+      <span>notifications</span>
+    </div>
+  </div>
+
+  <div class="box planned" style="left:1070px; top:840px; width:330px; height:200px;">
+    <div class="h">Redis</div>
+    <div class="s" style="margin-top:8px;">Planned — cache &amp; queue store</div>
+    <div class="s" style="font-size:11.5px;">Booking &amp; Queue Service<br>Session store · wait-time cache</div>
+    <div class="badge gray">Planned / Future</div>
+  </div>
+
+  <!-- ================= LAYER 5 — EXTERNAL & PLANNED ================= -->
+  <div class="layer-cap" style="left:110px; top:976px;">Layer 5 · <span>External &amp; Planned Integrations</span></div>
+
+  <div class="box planned" style="left:110px; top:1000px; width:560px; height:180px;">
+    <div class="h">AI Microservice</div>
+    <div class="s" style="margin-top:6px;">Clinical decision support — suggestions only, never a final diagnosis</div>
+    <div class="ext-list">
+      <div>Symptom-to-Specialty NLP Routing</div>
+      <div>Prescription OCR</div>
+      <div>Analytics</div>
+    </div>
+    <div class="badge gray" style="margin-top:8px;">Planned / Future</div>
+  </div>
+
+  <div class="box ext" style="left:730px; top:1000px; width:560px; height:180px;">
+    <div class="h">Nodemailer SMTP</div>
+    <div class="s" style="margin-top:6px;">Connected to the Notification Service only</div>
+    <div class="note">
+      <b>Critical events only:</b> email verification · password reset · doctor approval ·
+      final booking decision · deletion-request decision
+    </div>
+    <div class="badge" style="background:#e6def7; border:1px solid #c9b8ec; color:#3d1f7a; margin-top:9px;">Implemented</div>
+  </div>
+
+  <!-- ================= WIRE LABELS ================= -->
+  <div class="wlabel" style="left:398px; top:339px;">HTTPS / JSON</div>
+  <div class="wlabel" style="left:404px; top:552px;">internal service calls</div>
+  <div class="wlabel" style="left:452px; top:786px;">read / write</div>
+  <div class="wlabel planned" style="left:1206px; top:786px;">planned cache</div>
+  <div class="wlabel planned" style="left:36px; top:470px; transform:rotate(-90deg); transform-origin:left top;">planned · clinical decision support</div>
+  <div class="wlabel mail" style="left:1330px; top:672px;">critical events only</div>
+
+</div>
+
+</body>
+</html>

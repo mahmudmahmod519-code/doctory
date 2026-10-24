@@ -1,8 +1,9 @@
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const config = require("../config/env-config");
 
-const uploadDir = path.join(__dirname, '../public/uploads');
+const uploadDir = path.join(__dirname, `../${config.upload.uploadDir}`);
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -21,11 +22,11 @@ const storage = multer.diskStorage({
 
 module.exports = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: config.upload.size_file },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/'))
+        if (config.upload.allowedMimeTypes.includes(file.mimetype))
             cb(null, true);
         else
-            cb(new Error("this file is not image"), false);
+            cb(new Error("this file type is not allowed"), false);
     }
 });

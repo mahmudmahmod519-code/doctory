@@ -1,13 +1,15 @@
+// services/mailer.js (أو المسار الخاص بك)
 const nodemailer = require('nodemailer');
+const config = require('../config/env-config'); // استيراد ملف الإعدادات
 
-// Create transporter
+// Create transporter باستخدام القيم من ملف الـ Config
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
+    host: config.email.host,
+    port: config.email.port,
     secure: false,
     auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: config.email.user,
+        pass: config.email.pass
     }
 });
 
@@ -18,7 +20,7 @@ const transporter = nodemailer.createTransport({
 async function sendEmail({ to, subject, html }) {
     try {
         const info = await transporter.sendMail({
-            from: `"عطور أم القرى" <${process.env.SMTP_USER}>`,
+            from: `"عطور أم القرى" <${config.email.user}>`,
             to,
             subject,
             html

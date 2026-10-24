@@ -3,10 +3,17 @@
 // middleware/securityLogger.js
 const fs = require('fs');
 const path = require('path');
+const config = require('../config/env-config');
+
+const logDir = path.join(__dirname, '../', config.logging.dir);
+const logFile = path.join(logDir, 'suspicious.log');
+
+// نتأكد إن مجلد الـ logs موجود قبل أي كتابة
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+}
 
 module.exports = (req, res, next) => {
-    const startTime = Date.now();
-    
     // تسجيل الطلبات المشبوهة فقط
     const suspiciousPatterns = [
         /\.\.\//, // محاولة الوصول لملفات خارجية
@@ -31,10 +38,11 @@ module.exports = (req, res, next) => {
         };
         
         // تسجيل في ملف
-        fs.appendFileSync(
-            path.join(__dirname, '../logs/suspicious.log'),
-            JSON.stringify(logEntry) + '\n'
-        );
+        try {
+            fs.appendFileSync(logFile, JSON.stringify(logEntry) + '\n');
+        } catch (error) {
+            console.error('⚠️ Failed to write security log:', error.message);
+        }
         
         // إرسال تنبيه (يمكن إرسال إيميل أو Telegram)
         console.warn('⚠️ Suspicious request detected:', logEntry);

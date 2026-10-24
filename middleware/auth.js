@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
-const AppDataSource = require("../config/data-source");
 const User = require("../models/User.entity.js");
+const config = require("../config/env-config.js");
 
 module.exports = async (req, res, next) => {
     let token = req.cookies?.session_token;
@@ -17,7 +17,8 @@ module.exports = async (req, res, next) => {
     }
 
     try {
-        const decode = jwt.verify(token, process.env.JWT_SECRET);
+        // استخدام المفتاح من ملف الـ Config
+        const decode = jwt.verify(token, config.auth.jwt.secret);
         if (!decode) {
             if (req.path.startsWith('/api/')) {
                 return res.status(401).json({ status: "error", message: "جلسة غير صالحة" });
@@ -25,8 +26,7 @@ module.exports = async (req, res, next) => {
             return res.redirect("/auth/login");
         }
 
-        const UserRepo = AppDataSource.getRepository(User);
-        req.user = await UserRepo.findOne({ where: { id: decode.id } });
+        req.user = await User.findOne({ user_id: decode.user_id }).lean();
 
         if (!req.user) {
             if (req.path.startsWith('/api/')) {

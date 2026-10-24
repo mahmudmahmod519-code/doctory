@@ -11,27 +11,27 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      DB_HOST: mysql
-      DB_PORT: 3306
+      MONGO_URI: mongodb://${MONGO_USER:-root}:${MONGO_PASS:-rootpassword}@mongo:27017/${MONGO_DB_NAME:-clinic_db}?authSource=admin
     depends_on:
-      mysql:
+      mongo:
         condition: service_healthy
     networks:
       - doctory_net
 
-  mysql:
-    image: mysql:8.0
-    container_name: doctory_mysql_prod
+  mongo:
+    image: mongo:7
+    container_name: doctory_mongo_prod
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
-      MYSQL_DATABASE: ${DB_NAME:-clinic_db}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-rootpassword}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-clinic_db}
     ports:
-      - "3306:3306"
+      - "27017:27017"
     volumes:
-      - mysql_data_prod:/var/lib/mysql
+      - mongo_data_prod:/data/db
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD:-root}"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,7 +39,7 @@ services:
       - doctory_net
 
 volumes:
-  mysql_data_prod:
+  mongo_data_prod:
 
 networks:
   doctory_net:

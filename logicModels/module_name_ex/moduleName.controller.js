@@ -1,10 +1,13 @@
-const AppDataSource = require("../../config/data-source.js");
+// logicModels/module_name_ex/moduleName.controller.js
+// Reference implementation of the Auth flow (Mongoose based).
+// This is the base that will be moved to logicModels/auth/auth.controller.js in Phase 2.
 const User = require("../../models/User.entity.js");
+const RefreshToken = require("../../models/RefreshToken.entity.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const mailer = require("../../utils/mailer.js");
 const crypto = require("crypto");
-const { MoreThan } = require("typeorm");
+const config = require("../../config/env-config");
 
 // ==========================================
 // ✅ APIs للـ Guest
@@ -12,12 +15,13 @@ const { MoreThan } = require("typeorm");
 
 // POST /register - إنشاء حساب جديد
 exports.register = async (req, res) => {
-    const { name, email, password, phone, address } = req.body;
+    const { name, email, password, phone, address, role } = req.body;
 
-    const userRepo = AppDataSource.getRepository(User);
+    // نوع الحساب: مريض أو دكتور فقط (الأدمن يُنشأ من داخل لوحة الأدمن)
+    const accountRole = ['patient', 'doctor'].includes(role) ? role : 'patient';
 
     // التحقق من عدم وجود البريد مسبقاً
-    const existingUser = await userRepo.findOne({ where: { email } });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
         return res.status(400).json({ 
             status: "error", 
@@ -28,19 +32,24 @@ exports.register = async (req, res) => {
     // تشفير كلمة المرور
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = userRepo.create({
+    const newUser = await User.create({
+        user_id: crypto.randomUUID(),
         name,
-        email,
-        password: hashedPassword,
+        email: email.toLowerCase(),
+        password_hash: hashedPassword,
         phone: phone || null,
         address: address || null,
-        role: 'customer'
+        role: accountRole,
+        // المريض يقدر يستخدم حسابه فوراً، والدكتور يفضل pending لحين توثيق النقابة
+        status: accountRole === 'doctor' ? 'pending' : 'active',
     });
 
-    const saved = await userRepo.save(newUser);
-
     // إنشاء JWT وتعيينه في HTTP-Only Cookie
-    const token = jwt.sign({ id: saved.id, email: saved.email, role: saved.role });
+    const token = jwt.sign(
+        { user_id: newUser.user_id, email: newUser.email, role: newUser.role },
+        config.auth.jwt.secret,
+        { expiresIn: config.auth.jwt.expires_in }
+    );
     
     res.cookie('session_token', token, {
         httpOnly: true,
@@ -49,10 +58,10 @@ exports.register = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 أيام
     });
 
-    res.json({ 
+    res.status(201).json({ 
         status: "success", 
         message: "تم إنشاء الحساب بنجاح", 
-        data: { id: saved.id, name: saved.name, email: saved.email, role: saved.role } 
+        data: { user_id: newUser.user_id, name: newUser.name, email: newUser.email, role: newUser.role } 
     });
 };
 
@@ -60,8 +69,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     const { email, password } = req.body;
 
-    const userRepo = AppDataSource.getRepository(User);
-    const user = await userRepo.findOne({ where: { email } });
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
         return res.status(401).json({ 
@@ -70,7 +78,7 @@ exports.login = async (req, res) => {
         });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
         return res.status(401).json({ 
             status: "error", 
@@ -78,8 +86,20 @@ exports.login = async (req, res) => {
         });
     }
 
+    // الحساب الموقوف أو المحذوف لا يستطيع الدخول
+    if (user.status === 'suspended' || user.deleted_at) {
+        return res.status(403).json({
+            status: "error",
+            message: "الحساب غير نشط حالياً. تواصل مع الدعم."
+        });
+    }
+
     // إنشاء JWT
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role });
+    const token = jwt.sign(
+        { user_id: user.user_id, email: user.email, role: user.role },
+        config.auth.jwt.secret,
+        { expiresIn: config.auth.jwt.expires_in }
+    );
     
     res.cookie('session_token', token, {
         httpOnly: true,
@@ -88,10 +108,13 @@ exports.login = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 أيام
     });
 
+    // تحديث آخر دخول
+    await User.updateOne({ user_id: user.user_id }, { $set: { last_login: new Date() } });
+
     res.json({ 
         status: "success", 
         message: "تم تسجيل الدخول بنجاح", 
-        data: { id: user.id, name: user.name, email: user.email, role: user.role } 
+        data: { user_id: user.user_id, name: user.name, email: user.email, role: user.role } 
     });
 };
 
@@ -99,8 +122,7 @@ exports.login = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
-    const userRepo = AppDataSource.getRepository(User);
-    const user = await userRepo.findOne({ where: { email } });
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
         // لا نكشف عن وجود البريد من عدمه (أمان)
@@ -114,16 +136,16 @@ exports.forgotPassword = async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 3600000); // ساعة واحدة
 
-    await userRepo.update(user.id, {
-        reset_token: resetToken,
-        reset_token_expiry: resetTokenExpiry
-    });
+    await User.updateOne(
+        { user_id: user.user_id },
+        { $set: { token: resetToken, updatedAt: new Date() } }
+    );
 
     // إرسال البريد الإلكتروني
-    const resetLink = `${process.env.BASE_URL}/auth/reset-password/${resetToken}`;
+    const resetLink = `${config.ai.urlSite}/auth/reset-password/${resetToken}`;
     await mailer.sendEmail({
         to: email,
-        subject: "استعادة كلمة المرور - عطور أم القرى",
+        subject: "استعادة كلمة المرور - Doctory",
         html: `
             <h2>مرحباً ${user.name}</h2>
             <p>تم طلب استعادة كلمة المرور. اضغط على الرابط التالي:</p>
@@ -144,12 +166,9 @@ exports.resetPassword = async (req, res) => {
     const { token } = req.params;
     const { new_password } = req.body;
 
-    const userRepo = AppDataSource.getRepository(User);
-    const user = await userRepo.findOne({ 
-        where: { 
-            reset_token: token,
-            reset_token_expiry: MoreThan(new Date())
-        }
+    const user = await User.findOne({
+        token,
+        updatedAt: { $gt: new Date(Date.now() - 3600000) } // صالح لمدة ساعة
     });
 
     if (!user) {
@@ -162,11 +181,10 @@ exports.resetPassword = async (req, res) => {
     // تشفير كلمة المرور الجديدة
     const hashedPassword = await bcrypt.hash(new_password, 10);
 
-    await userRepo.update(user.id, {
-        password: hashedPassword,
-        reset_token: null,
-        reset_token_expiry: null
-    });
+    await User.updateOne(
+        { user_id: user.user_id },
+        { $set: { password_hash: hashedPassword, token: null, updatedAt: new Date() } }
+    );
 
     res.json({ 
         status: "success", 
