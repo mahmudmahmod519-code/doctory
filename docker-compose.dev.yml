@@ -43,6 +43,28 @@ services:
     networks:
       - doctory_net
 
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: doctory_seed_dev
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://${MONGO_USER:-root}:${MONGO_PASS:-rootpassword}@mongo:27017/${MONGO_DB_NAME:-clinic_db}?authSource=admin
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      mongo:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command: npm run seed
+    networks:
+      - doctory_net
+
 volumes:
   mongo_data_dev:
 

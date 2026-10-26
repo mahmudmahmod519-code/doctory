@@ -37,6 +37,12 @@ const bookingItemSchema = new mongoose.Schema(
       default: 'pending',
       trim: true
     },
+    type: {
+      type: String,
+      required: true,
+      enum: ['booking', 'consulting'],
+      trim: true
+    },
     qr_code: {
       type: String,
       trim: true

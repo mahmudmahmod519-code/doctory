@@ -7,12 +7,6 @@ const bookingSchema = new mongoose.Schema(
       ref: 'DoctorPortfolio',
       required: true
     },
-    type: {
-      type: String,
-      required: true,
-      enum: ['booking', 'consulting'],
-      trim: true
-    },
     total_patients: {
       type: Number,
       required: true,
