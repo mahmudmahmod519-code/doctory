@@ -56,6 +56,7 @@ async function seed() {
   const adminEmail = (config.admin && config.admin.email) || 'admin@doctory.com';
   const adminName = (config.admin && config.admin.username) || 'SuperAdmin';
   const adminPhone = (config.admin && config.admin.phone) || '+200000000000';
+
   const adminUser = await User.create({
     user_id: crypto.randomUUID(),
     role: 'admin',
@@ -201,6 +202,7 @@ async function seed() {
     patient_age: 35,
     patient_address: 'Cairo, Egypt',
     status: 'accepted',
+    type: 'booking',
   });
   console.log(`✅ Booking 1 created: Mohamed Hassan -> Dr. Ahmed (queue #1)`);
 
@@ -222,6 +224,7 @@ async function seed() {
     patient_age: 28,
     patient_address: 'Giza, Egypt',
     status: 'pending',
+    type: 'consulting',
   });
   console.log(`✅ Booking 2 created: Sara Ibrahim -> Dr. Sara (queue #1, pending)`);
 

@@ -3,33 +3,34 @@
 > **Graduation Project** — Faculty of Computers and Information  
 > AI-Powered Smart Clinic System for Patient Management and Clinical Decision Support
 
-**Stack:** Node.js · Express.js · MongoDB (Mongoose) · EJS (SSR) · Flutter (planned)
+**Stack:** Node.js · Express.js 5 · MongoDB (Mongoose) · EJS (SSR) · Flutter (planned)
 
 ---
 
 ## 📖 Table of Contents
 
 1. [Project Overview](#project-overview)
-2. [Tech Stack](#tech-stack)
-3. [System Architecture](#system-architecture)
-4. [Project Structure](#project-structure)
-5. [Environment Variables](#environment-variables)
-6. [Pages](#pages)
-7. [Page Documentation Template](#page-documentation-template)
-8. [APIs](#apis)
-9. [API Documentation Template](#api-documentation-template)
-10. [Scenarios](#scenarios)
-11. [Database](#database)
-12. [Database Collections](#database-collections)
-13. [User Roles & Permissions](#user-roles--permissions)
-14. [Authorization Rules](#authorization-rules)
-15. [Security Mechanisms](#security-mechanisms)
-16. [Notifications Policy](#notifications-policy)
-17. [Checklist](#checklist)
-18. [Roadmap to Tasks](#roadmap-to-tasks)
-19. [Running the Project](#running-the-project)
-20. [Contributing](#contributing)
-21. [License](#license)
+2. [Current Implementation Status](#current-implementation-status)
+3. [Tech Stack](#tech-stack)
+4. [System Architecture](#system-architecture)
+5. [Project Structure](#project-structure)
+6. [Environment Variables](#environment-variables)
+7. [Pages](#pages)
+8. [Page Documentation Template](#page-documentation-template)
+9. [APIs](#apis)
+10. [API Documentation Template](#api-documentation-template)
+11. [Scenarios](#scenarios)
+12. [Database](#database)
+13. [Database Collections](#database-collections)
+14. [User Roles & Permissions](#user-roles--permissions)
+15. [Authorization Rules](#authorization-rules)
+16. [Security Mechanisms](#security-mechanisms)
+17. [Notifications Policy](#notifications-policy)
+18. [Checklist](#checklist)
+19. [Roadmap to Tasks](#roadmap-to-tasks)
+20. [Running the Project](#running-the-project)
+21. [Contributing](#contributing)
+22. [License](#license)
 
 ---
 
@@ -62,12 +63,12 @@
 | **Models (Mongoose)** | 11 | 11 | ✅ Complete — 11 collections with schemas, enums, indexes |
 | **Middleware** | 6 | 6 | ✅ Complete — auth, roles, upload, validate, helmet, securityLogger |
 | **Config** | 5 | 3 | ✅ Complete — `database.js`, `env-config.js`, `server-config.js` |
-| **Utils** | 8 | 7 | ✅ Mostly — `validation.js` exports an empty object |
+| **Utils** | 8 | 8 | ✅ Complete — all utilities including Joi validation schemas |
 | **Routes** | 52 | 5 | 🟡 Structure only — 47 files are empty placeholders |
 | **logicModels** | 34 | 4 | 🟡 Structure only — 30 files are empty placeholders |
 | **Services** | 4 | 0 | ❌ Empty placeholders |
 | **Views (EJS)** | 0 | 0 | ❌ No template files exist yet |
-| **Scripts** | 0 | 0 | ❌ `seed.js` / `migrate.js` referenced but not created |
+| **Scripts** | 2 | 2 | ✅ `scripts/migrate.js`, `scripts/seed.js` created |
 | **Docker / Env** | 4 | 4 | ✅ Complete — MongoDB-based, build verified |
 
 **Overall: the data layer and infrastructure are done; the application layer (routes, controllers, renders, views, services) is not implemented yet.**
@@ -120,13 +121,13 @@ The server **starts successfully** and connects to MongoDB. All web requests cur
                     │          │
                     │          ├──────────────────┐
                     ▼          ▼                  ▼
-        ┌───────────────┐  ┌─────────┐   ┌──────────────────────┐
-        │    MongoDB    │  │ Redis   │   │  AI Microservice     │
-        │   (Mongoose) │  │ Planned │   │  Clinical Decision   │
-        │  11 colls.   │  │         │   │  Support — planned   │
-        └───────────────┘  └─────────┘   └──────────────────────┘
-                    │
-                    ▼
+         ┌───────────────┐  ┌─────────┐   ┌──────────────────────┐
+         │    MongoDB    │  │ Redis   │   │  AI Microservice     │
+         │   (Mongoose) │  │ Planned │   │  Clinical Decision   │
+         │  11 colls.   │  │         │   │  Support — planned   │
+         └───────────────┘  └─────────┘   └──────────────────────┘
+                     │
+                     ▼
         ┌───────────────────────────────────┐
         │   Notifications                    │
         │   • In-App  → notifications coll.  │
@@ -267,7 +268,9 @@ doctory/
 │   ├── js/                        ⬜ Empty
 │   ├── images/                    ⬜ Empty
 │   └── assests/                   📁 1 image file
-├── scripts/                       ❌ Empty — seed.js / migrate.js not created
+├── scripts/                       ✅ seed.js, migrate.js created
+│   ├── migrate.js                 ✅ Ensures Mongoose indexes on all collections
+│   └── seed.js                    ✅ Seeds sample data (admin, doctors, patients, bookings, reviews, reports, notifications)
 ├── docs/
 │   ├── database/
 │   ├── backend/
@@ -280,7 +283,7 @@ doctory/
 ├── Dockerfile                     ✅ Production image
 ├── Dockerfile.dev                 ✅ Development image (nodemon)
 ├── docker-compose.yml             ✅ app + mongo:7
-├── docker-compose.dev.yml         ✅ app + mongo:7 with live reload
+├── docker-compose.dev.yml         ✅ app + mongo:7 with live reload + seed service
 └── README.md
 ```
 
@@ -685,14 +688,14 @@ description by arabic: [description in Arabic]
 
 Eleven collections are defined in `models/*.entity.js`. Every schema uses `timestamps: true` and declares explicit indexes.
 
-> **Naming note:** Mongoose derives collection names from the model name and lowercases them, so the physical collections are `users`, `doctorportfolios`, `doctorworks`, `bookings`, `bookingitems`, `reviews`, `reports`, `auditlogs`, `deletionrequests`, `refreshtokens`, and `notifications`. The snake_case names used in the original design documents (`doctor_portfolios`, `booking_items`, `audit_logs`, …) refer to the same data. Set an explicit `collection` option in the schema if the snake_case names are required in production.
+> **Naming note:** Mongoose derives collection names from the model name and lowercases them, so the physical collections are `users`, `doctorportfolios`, `doctorworks`, `bookings`, `bookingitems`, `reviews`, `reports`, `auditlogs`, `deletionrequests`, `refreshtokens`, and `notifications`.
 
 ### ERD
 
 ```
-users (1) ────< (N) doctorportfolios (1) ────< (N) doctorworks
+users (1) ───< (N) doctorportfolios (1) ───< (N) doctorworks
    │                        │
-   │                        └────< (N) bookings (1) ────< (N) bookingitems
+   │                        └───< (N) bookings (1) ───< (N) bookingitems
    │
    ├──< (N) reviews
    ├──< (N) reports
@@ -701,186 +704,6 @@ users (1) ────< (N) doctorportfolios (1) ────< (N) doctorworks
    ├──< (N) deletionrequests
    └──< (N) auditlogs
 ```
-
----
-
-## 📚 Database Collections
-
-### 1. `users` — `User.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `user_id` | String | required, unique | External UUID reference |
-| `role` | String | required, enum | `admin` \| `doctor` \| `patient` |
-| `status` | String | required, enum, default `pending` | `active` \| `pending` \| `suspended` |
-| `name` | String | required | Full name |
-| `email` | String | required, unique, lowercase | Login email |
-| `email_verified` | Boolean | default `false` | Email confirmed |
-| `password_hash` | String | required | bcrypt hash |
-| `phone` | String | | Phone number |
-| `address` | String | | Address |
-| `birth_date` | Date | | Used to derive age |
-| `image_profile` | String | | Profile image URL |
-| `enable_2fa` | Boolean | default `false` | 2FA enabled |
-| `token` | String | | Password-reset / verification token |
-| `secure_key` | String | | TOTP secret key |
-| `last_login` | Date | | Last login timestamp |
-| `deleted_at` | Date | | Soft-delete timestamp |
-| `deleted_by` | ObjectId → `users` | | Who performed the soft delete |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `user_id`, `email`, `role`, `status`
-
-### 2. `doctorportfolios` — `DoctorPortfolio.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `portfolio_id` | String | required, unique | External UUID reference |
-| `user_id` | ObjectId → `users` | required | Owning user account |
-| `doctor_name` | String | required | Doctor's full name |
-| `specialty` | String | required | Medical specialty |
-| `title` | String | | Professional title |
-| `background_image` | String | | Background image URL |
-| `profile_image` | String | | Profile image URL |
-| `phone_number` | String | | Contact number |
-| `working_hours` | String | | Working-hours schedule |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `portfolio_id`, `user_id`, `specialty`
-
-### 3. `doctorworks` — `DoctorWork.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `work_id` | String | required, unique | External UUID reference |
-| `portfolio_id` | ObjectId → `doctorportfolios` | required | Owning portfolio |
-| `status` | String | required, enum, default `pending` | `pending` \| `active` \| `rejected` |
-| `title` | String | required | Service title |
-| `image` | String | | Service image URL |
-| `price` | Number | | Service price |
-| `description` | String | | Service description |
-| `duration_session` | Number | | Duration in minutes |
-| `working_time` | String | | Time of day the service is available |
-| `deleted_at` | Date | | Soft-delete timestamp |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `work_id`, `portfolio_id`, `status`
-
-### 4. `bookings` — `Booking.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `portfolio_id` | ObjectId → `doctorportfolios` | required | Doctor's portfolio |
-| `type` | String | required, enum | `booking` (exam) \| `consulting` |
-| `total_patients` | Number | required, default `50` | Session capacity |
-| `status` | String | required, enum, default `pending` | `pending` \| `active` \| `expired` \| `cancelled` |
-| `appointment_date` | Date | required | Session date |
-| `appointment_time` | String | required | Session time |
-| `deleted_at` | Date | | Soft-delete timestamp |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `portfolio_id`, `status`, `appointment_date`, compound `portfolio_id + appointment_date`
-
-### 5. `bookingitems` — `BookingItem.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `booking_id` | ObjectId → `bookings` | required | Parent session |
-| `user_id` | ObjectId → `users` | required | Patient account |
-| `queue_number` | Number | required | Position in the queue |
-| `patient_name` | String | | Snapshot at booking time |
-| `patient_phone` | String | | Snapshot at booking time |
-| `patient_age` | Number | | Snapshot at booking time |
-| `patient_address` | String | | Snapshot at booking time |
-| `status` | String | enum, default `pending` | `pending` \| `accepted` \| `rejected` \| `completed` \| `cancelled` |
-| `qr_code` | String | | Check-in QR code |
-| `completed_at` | Date | | When the visit was completed |
-| `deleted_at` | Date | | Soft-delete timestamp |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `booking_id`, `user_id`, `status`, compound `booking_id + user_id` (unique — prevents duplicate bookings)
-
-### 6. `reviews` — `Review.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `user_id` | ObjectId → `users` | required | Reviewing patient |
-| `portfolio_id` | ObjectId → `doctorportfolios` | required | Reviewed doctor |
-| `feedback` | String | | Review text |
-| `rating` | Number | required, min 1, max 5 | Star rating |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `user_id`, `portfolio_id`
-
-### 7. `reports` — `Report.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `user_id` | ObjectId → `users` | required | Patient |
-| `portfolio_id` | ObjectId → `doctorportfolios` | required | Treating doctor |
-| `description` | String | | Medical report description |
-| `medicines` | Array of String | default `[]` | Prescribed medicine identifiers |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `user_id`, `portfolio_id`
-
-### 8. `auditlogs` — `AuditLog.entity.js` ✅
-
-Insert-only log of every sensitive operation.
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `actor_id` | String | required | Who performed the action |
-| `actor_role` | String | required | Role of the actor |
-| `action` | String | required | Action type (e.g. `BOOKING_ACCEPTED`) |
-| `entity_type` | String | required | Type of the affected entity |
-| `entity_id` | Mixed | required | Identifier of the affected entity |
-| `ip` | String | | Actor IP address |
-| `metadata` | Mixed | default `{}` | Old/new values, rejection reasons |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `actor_id`, `actor_role`, `action`, compound `entity_type + entity_id`, `createdAt: -1`
-
-### 9. `deletionrequests` — `DeletionRequest.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `user_id` | ObjectId → `users` | required | Requesting patient |
-| `status` | String | enum, default `pending` | `pending` \| `approved` \| `rejected` |
-| `reason` | String | | Reason for the request |
-| `reviewed_by` | ObjectId → `users` | | Admin who reviewed it |
-| `reviewed_at` | Date | | Review timestamp |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `user_id`, `status`
-
-### 10. `refreshtokens` — `RefreshToken.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `user_id` | ObjectId → `users` | required | Token owner |
-| `token` | String | required, unique | The refresh token itself |
-| `expires_at` | Date | required | Expiry timestamp (TTL index) |
-| `revoked_at` | Date | | Revocation timestamp |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `user_id`, `token` (unique), `expires_at` (TTL — documents auto-delete at expiry)
-
-### 11. `notifications` — `Notification.entity.js` ✅
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `notification_id` | String | required, unique | External UUID reference |
-| `user_id` | ObjectId → `users` | required | Recipient |
-| `type` | String | required, enum | `queue_update` \| `booking_accepted` \| `booking_rejected` \| `turn_warning` \| `appointment_cancelled` \| `doctor_verified` \| `deletion_request_update` \| `system` |
-| `title` | String | required | Short title |
-| `message` | String | required | Full message |
-| `is_read` | Boolean | default `false` | Read flag |
-| `related_entity_type` | String | | Related entity kind (e.g. `booking_item`) |
-| `related_entity_id` | Mixed | | Related entity identifier |
-| `createdAt` / `updatedAt` | Date | | Automatic timestamps |
-
-**Indexes:** `notification_id`, `user_id`, `is_read`, `createdAt: -1`, compound `user_id + is_read`
 
 ---
 
@@ -923,7 +746,7 @@ Insert-only log of every sensitive operation.
 | 10 | **Password Hashing** | ✅ Ready | bcrypt with a configurable cost factor (`SALT_ROUNDS`, default 12) |
 | 11 | **Soft Delete + Audit Log** | ✅ Data layer ready | `deleted_at` / `deleted_by` on users, bookings, booking items, and doctor works; every sensitive write lands in `auditlogs` |
 | 12 | **Data Deletion Requests** | 📋 Planned | A formal workflow for Egyptian Personal Data Protection Law No. 151 (2020) |
-| 13 | **No SMS** | ✅ Policy | No SMS and no paid SMS gateway anywhere in the project — see the Notifications Policy |
+| 13 | **No SMS** | ✅ Policy | No SMS and no paid SMS gateway anywhere in the project — see Notifications Policy |
 | 14 | **AI Safety** | ✅ Policy | AI output is always a suggestion; the physician keeps final authority |
 | 15 | **Secret Management** | ✅ | `.env` is gitignored; `.env.example` carries no secrets |
 
@@ -1020,19 +843,20 @@ Insert-only log of every sensitive operation.
 - [x] `cronJobs.js` — refresh-token cleanup using Mongoose
 - [x] `remove_password.js` — strips the password field
 - [x] `payment.js` — Paymob integration
-- [ ] `validation.js` — Joi schemas still need to be written
+- [x] `validation.js` — Joi schemas for all models implemented
 
-### Routes — ❌ Not implemented
+### Routes — ❌ Not implemented (Documented in route index comments)
 
 - [ ] `routes/index.js` — mount all 15 modules
-- [ ] `routes/auth/` — index.js, auth.apis.js, auth.render.js
-- [ ] `routes/patient/` — index.js, patient.apis.js, patient.render.js
-- [ ] `routes/doctor/` — index.js, doctor.apis.js, doctor.render.js
-- [ ] `routes/admin/` — index.js, admin.apis.js, admin.render.js
-- [ ] `routes/Notification/` — index.js, Notification.apis.js, Notification.render.js
+- [ ] `routes/auth/` — index.js, auth.apis.js, auth.render.js *(documented in index.js comments)*
+- [ ] `routes/patient/` — index.js, patient.apis.js, patient.render.js *(documented in index.js comments)*
+- [ ] `routes/doctor/` — index.js, doctor.apis.js, doctor.render.js *(documented in index.js comments)*
+- [ ] `routes/admin/` — index.js, admin.apis.js, admin.render.js *(documented in index.js comments)*
+- [ ] `routes/Notification/` — index.js, Notification.apis.js, Notification.render.js *(documented in index.js comments)*
 - [ ] `routes/User/`, `routes/Booking/`, `routes/BookingItem/`, `routes/Review/`, `routes/Report/`
 - [ ] `routes/AuditLog/`, `routes/DeletionRequest/`, `routes/RefreshToken/`
 - [ ] `routes/DoctorPortfolio/`, `routes/DoctorWork/`
+
 
 ### Controllers & Renders — ❌ Not implemented
 
@@ -1064,10 +888,10 @@ Insert-only log of every sensitive operation.
 - [ ] `views/errors/` — 403, 404, 500
 - [ ] `public/css/`, `public/js/`, `public/images/` — assets
 
-### Scripts — ❌ Not implemented
+### Scripts — ✅ Complete
 
-- [ ] `scripts/seed.js` — sample admin, doctors, patients, services, bookings
-- [ ] `scripts/migrate.js` — index creation and schema migration
+- [x] `scripts/migrate.js` — Creates all Mongoose indexes on all collections
+- [x] `scripts/seed.js` — Seeds sample data (admin, 2 doctors, 2 patients, bookings, reviews, reports, notifications)
 
 ### Authentication — ❌ Not implemented
 
@@ -1136,7 +960,7 @@ Insert-only log of every sensitive operation.
 ### Prerequisites
 
 - **Node.js 20+**
-- **MongoDB** running locally, or Docker available to run it
+- **MongoDB** running locally, or Docker available
 
 ### Local Setup
 
@@ -1153,10 +977,16 @@ cp .env.example .env
 #    Option B — with Docker:
 docker run -d --name doctory_mongo -p 27017:27017 mongo:7
 
-# 4. Start the development server (auto-reload)
+# 4. Run migrations (creates indexes on all collections)
+npm run migrate
+
+# 5. Seed sample data (optional but recommended for testing)
+npm run seed
+
+# 6. Start the development server (auto-reload)
 npm run dev
 
-# 5. Or start in production mode
+# 7. Or start in production mode
 npm start
 ```
 
@@ -1167,28 +997,30 @@ The server listens on `http://localhost:3000` and only starts after a successful
 ### Docker
 
 ```bash
-# Development — live code reload, MongoDB on host port 27018
+# Development — live code reload, MongoDB on host port 27017
 docker compose -f docker-compose.dev.yml up --build
 
 # Production — optimized image, MongoDB on host port 27017
 docker compose up --build -d
 
 # Stop and remove
-docker compose -f docker-compose.dev.yml down
-docker compose down -v
+docker compose down        # production
+docker compose -f docker-compose.dev.yml down   # development
 ```
 
 Both compose files run **MongoDB** (`mongo:7`) with a healthcheck, a named volume, and the app configured with the matching `MONGO_URI`.
 
-### Available Scripts
+The `docker-compose.dev.yml` also includes a `seed` service that automatically runs `npm run seed` after the app and MongoDB are healthy, so your development database comes pre-populated with sample data.
+
+### Available npm scripts
 
 | Script | Command | Status |
 |--------|---------|--------|
 | `npm start` | `node server.js` | ✅ Working |
 | `npm run dev` | `nodemon server.js` | ✅ Working |
-| `npm run migrate` | `node scripts/migrate.js` | ⬜ Script not created yet |
-| `npm run migrate:revert` | `node scripts/migrate.js --revert` | ⬜ Script not created yet |
-| `npm run seed` | `node scripts/seed.js` | ⬜ Script not created yet |
+| `npm run migrate` | `node scripts/migrate.js` | ✅ Working |
+| `npm run migrate:revert` | `node scripts/migrate.js --revert` | ⬜ Script exists but revert logic not implemented |
+| `npm run seed` | `node scripts/seed.js` | ✅ Working |
 | `npm run lint` | placeholder | ⬜ No linter configured |
 | `npm test` | placeholder | ⬜ No test suite yet |
 
