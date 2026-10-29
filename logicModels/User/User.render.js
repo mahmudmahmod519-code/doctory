@@ -1,13 +1,23 @@
-const router = require('express').Router();
-const auth = require('../../middleware/auth');
-const roles = require('../../middleware/roles');
-const catchError = require('../../utils/catchError');
-const renderController = require('../../logicModels/User/User.render');
+const checkLogin = require('../../utils/checkLogin');
 
 // GET /user/profile
-router.get('/profile', auth, roles('patient'), catchError(renderController.getProfileRender));
+// Render the patient profile page.
+// Shows user account details: name, email, phone, address, birth date, role, status.
+exports.getProfileRender = async (req, res) => {
+    res.render('patient/settings', {
+        ...checkLogin(req, res),
+        pageTitle: 'الملف الشخصي',
+        user: req.user
+    });
+};
 
 // GET /user/settings
-router.get('/settings', auth, catchError(renderController.getSettingsRender));
-
-module.exports = router;
+// Render the user settings page.
+// Allows editing personal data, changing password, enabling/disabling 2FA.
+exports.getSettingsRender = async (req, res) => {
+    res.render('patient/settings', {
+        ...checkLogin(req, res),
+        pageTitle: 'الإعدادات',
+        user: req.user
+    });
+};
