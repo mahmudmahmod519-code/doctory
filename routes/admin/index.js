@@ -1,3 +1,12 @@
+const router = require('express').Router();
+const adminRouter = require('./admin.apis')
+
+router.use('/api/admin', adminRouter);
+
+module.exports = router;
+
+
+
 // ==========================================
 // RENDER ROUTES (EJS Pages)
 // ==========================================
