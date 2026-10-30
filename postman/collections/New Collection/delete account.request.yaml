@@ -1,0 +1,7 @@
+$kind: http-request
+description: ""
+url: http://localhost:3000/api/user/account
+method: DELETE
+headers:
+  Authorization: "{{bearer_token_07xr}}"
+order: 5000

@@ -1,0 +1,17 @@
+$kind: http-request
+name: http://localhost:3000/api/user/upload-image
+description: ""
+url: http://localhost:3000/api/user/upload-image
+method: POST
+headers:
+  Authorization: "{{bearer_token_07xr}}"
+body:
+  type: formdata
+  content:
+    - type: file
+      key: image
+      src:
+        - /C:/Users/modye/Desktop/short list/20260814015005_1.jpg
+      description: ""
+      disabled: false
+order: 4000

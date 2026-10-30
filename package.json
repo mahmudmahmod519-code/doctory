@@ -36,6 +36,9 @@
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.0"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true
   }
 }

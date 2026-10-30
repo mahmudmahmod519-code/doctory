@@ -1,3 +1,9 @@
+const router = require('express').Router();
+
+router.use('/api/user', require('./User.apis.js'));
+router.use('/user', require('./User.render.js'));
+
+module.exports = router;
 // ==========================================
 // RENDER ROUTES (EJS Pages)
 // ==========================================
