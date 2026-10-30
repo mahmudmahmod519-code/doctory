@@ -1,0 +1,18 @@
+$kind: http-request
+description: ""
+url: http://localhost:3000/api/user/profile
+method: PATCH
+headers:
+  Authorization: "{{bearer_token_07xr}}"
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Ahmed Updated\",\r
+
+    \  \"phone\": \"+201111111111\",\r
+
+    \  \"address\": \"Giza, Egypt\"\r
+
+    }"
+order: 1000
