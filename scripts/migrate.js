@@ -41,6 +41,7 @@ async function migrate() {
   require('../models/DeletionRequest.entity.js');
   require('../models/RefreshToken.entity.js');
   require('../models/Notification.entity.js');
+  require('../models/PredictionLog.entity.js');
 
   console.log('✅ All model indexes ensured');
   await mongoose.disconnect();

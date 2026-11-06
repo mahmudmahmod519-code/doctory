@@ -16,21 +16,23 @@
 5. [Project Structure](#project-structure)
 6. [Environment Variables](#environment-variables)
 7. [Pages](#pages)
-8. [Page Documentation Template](#page-documentation-template)
-9. [APIs](#apis)
-10. [API Documentation Template](#api-documentation-template)
-11. [Scenarios](#scenarios)
-12. [Database](#database)
-13. [Database Collections](#database-collections)
-14. [User Roles & Permissions](#user-roles--permissions)
-15. [Authorization Rules](#authorization-rules)
-16. [Security Mechanisms](#security-mechanisms)
-17. [Notifications Policy](#notifications-policy)
-18. [Checklist](#checklist)
-19. [Roadmap to Tasks](#roadmap-to-tasks)
-20. [Running the Project](#running-the-project)
-21. [Contributing](#contributing)
-22. [License](#license)
+8. [Page-to-API Index](#page-to-api-index)
+9. [Page Documentation Template](#page-documentation-template)
+10. [APIs](#apis)
+11. [API Documentation Template](#api-documentation-template)
+12. [Scenarios](#scenarios)
+13. [Database](#database)
+14. [Database Collections](#database-collections)
+15. [User Roles & Permissions](#user-roles--permissions)
+16. [Authorization Rules](#authorization-rules)
+17. [Security Mechanisms](#security-mechanisms)
+18. [Notifications Policy](#notifications-policy)
+19. [AI Scheduling Prediction](#ai-scheduling-prediction)
+20. [Checklist](#checklist)
+21. [Roadmap to Tasks](#roadmap-to-tasks)
+22. [Running the Project](#running-the-project)
+23. [Contributing](#contributing)
+24. [License](#license)
 
 ---
 
@@ -467,6 +469,128 @@ Copy `.env.example` to `.env` and adjust. `.env` is gitignored and must never be
 
 ---
 
+## 🔗 Page-to-API Index
+
+The table below maps every page to the backend API endpoints it consumes. Endpoints marked **(planned)** are defined in the [APIs](#apis) section but are not yet implemented in `routes/`.
+
+### 🏠 Public Pages (Guest)
+
+| # | Page | Path | APIs Consumed |
+|---|------|------|---------------|
+| 1 | Home / Main Page | `/` | GET /api/auth/me (check auth state) |
+| 2 | About Us | `/about-us` | None (static page) |
+| 3 | Contact Us | `/contact-us` | None (static page) |
+| 4 | FAQ | `/faq` | None (static page) |
+| 5 | Privacy Policy | `/legal/privacy` | None (static page) |
+| 6 | Terms & Conditions | `/legal/terms` | None (static page) |
+| 7 | Refund Policy | `/refund` | None (static page) |
+| 8 | Sign Up Options | `/auth/signup-options` | None (static page) |
+| 9 | Login | `/auth/login` | POST /api/auth/login |
+| 10 | Patient Registration | `/auth/register/patient` | POST /api/auth/register/patient |
+| 11 | Doctor Registration | `/auth/register/doctor` | POST /api/auth/register/doctor |
+| 12 | Forgot Password | `/auth/forgot-password` | POST /api/auth/forgot-password |
+| 13 | Reset Password | `/auth/reset-password/:token` | POST /api/auth/reset-password |
+| 14 | Email Verification | `/auth/verify-email/:token` | POST /api/auth/verify-email |
+| 15 | 2FA Verification | `/auth/2fa/verify` | POST /api/auth/2fa/verify |
+| 16 | Doctor Search / Listing | `/doctors` | GET /api/admin/doctors (planned) |
+| 17 | Public Doctor Profile | `/doctors/:id` | GET /api/admin/doctors/:id (planned) |
+
+### 👤 Patient Pages
+
+| # | Page | Path | APIs Consumed |
+|---|------|------|---------------|
+| 18 | Patient Dashboard | `/patient/dashboard` | GET /api/auth/me, GET /api/admin/bookings (planned) |
+| 19 | Waiting Queue | `/patient/waiting-queue` | GET /api/admin/waiting-list (planned) |
+| 20 | Turn Notification | `/patient/turn-notification` | GET /api/queue/:bookingItemId (planned), PATCH /api/queue/:bookingItemId/confirm (planned), PATCH /api/queue/:bookingItemId/decline (planned) |
+| 21 | First Decline Warning | `/patient/decline-warning` | PATCH /api/queue/:bookingItemId/decline (planned) |
+| 22 | Appointment Cancelled | `/patient/appointment-cancelled` | PATCH /api/queue/:bookingItemId/decline (planned) |
+| 23 | Medical History | `/patient/medical-history` | GET /api/patients/:patientId/medical-history (planned) |
+| 24 | Medical Report | `/patient/medical-report` | GET /api/admin/bookings/:id (planned) |
+| 25 | Book Appointment / Select Service | `/book/:portfolioId` | POST /api/admin/bookings (planned), GET /api/admin/services (planned) |
+| 26 | Patient Profile / Settings | `/patient/settings` | GET /api/auth/me, PATCH /api/admin/users/:id (planned) |
+| 27 | Submit Review | `/patient/review/:bookingItemId` | POST /api/admin/reviews/:id (planned) |
+| 28 | Notifications Center | `/notifications` | GET /api/notifications, PATCH /api/notifications/:id/read, PATCH /api/notifications/read-all |
+
+### 👨‍⚕️ Doctor Pages
+
+| # | Page | Path | APIs Consumed |
+|---|------|------|---------------|
+| 29 | Doctor Login | `/doctor/login` | POST /api/auth/login |
+| 30 | Doctor Dashboard | `/doctor/dashboard` | GET /api/doctor/dashboard (planned) |
+| 31 | Pending Bookings | `/doctor/bookings/pending` | GET /api/doctor/bookings?status=pending (planned) |
+| 32 | Booking Details | `/doctor/bookings/:id` | GET /api/doctor/bookings/:bookingId (planned) |
+| 33 | Waiting List | `/doctor/waiting-list` | GET /api/doctor/waiting-list (planned) |
+| 34 | Patient Visit / Clinical Summary | `/doctor/visits/:id/clinical-summary` | GET /api/doctor/visits/:visitId/clinical-summary (planned) |
+| 35 | Diagnosis Editor | `/doctor/visits/:id/diagnosis` | PUT /api/doctor/visits/:visitId/diagnosis (planned) |
+| 36 | Prescription Editor | `/doctor/visits/:id/prescription` | POST /api/doctor/visits/:visitId/prescriptions (planned) |
+| 37 | Doctor Verification Status | `/doctor/verification-status` | GET /api/doctor/profile/verification-status (planned) |
+| 38 | Doctor Portfolio Editor | `/doctor/portfolio` | GET /api/doctor/portfolio, PATCH /api/doctor/portfolio (planned) |
+
+### 🛡️ Admin Pages
+
+| # | Page | Path | APIs Consumed |
+|---|------|------|---------------|
+| 39 | Admin Dashboard | `/admin/dashboard` | GET /api/admin/stats (planned) |
+| 40 | Doctor Verification | `/admin/doctors/verification` | GET /api/admin/doctors/pending (planned) |
+| 41 | Doctor Verification Details | `/admin/doctors/verification/:id` | GET /api/admin/doctors/:id/verification (planned) |
+| 42 | Doctors | `/admin/doctors` | GET /api/admin/doctors (planned) |
+| 43 | Doctor Profile | `/admin/doctors/:id` | GET /api/admin/doctors/:id (planned) |
+| 44 | Patients | `/admin/patients` | GET /api/admin/patients (planned) |
+| 45 | Patient Profile | `/admin/patients/:id` | GET /api/admin/patients/:id (planned) |
+| 46 | Users & Admins | `/admin/users` | GET /api/admin/users (planned) |
+| 47 | User Details | `/admin/users/:id` | GET /api/admin/users/:id (planned) |
+| 48 | Bookings | `/admin/bookings` | GET /api/admin/bookings (planned) |
+| 49 | Booking Details | `/admin/bookings/:id` | GET /api/admin/bookings/:id (planned) |
+| 50 | Waiting List | `/admin/waiting-list` | GET /api/admin/waiting-list (planned) |
+| 51 | Doctor Services | `/admin/services` | GET /api/admin/services (planned) |
+| 52 | Audit Log | `/admin/audit-log` | GET /api/admin/audit-logs (planned) |
+| 53 | Deletion Requests | `/admin/deletion-requests` | GET /api/admin/deletion-requests (planned) |
+| 54 | Error Pages | `/403`, `/404`, `/500` | None (static error pages) |
+
+### 🔗 API-to-Page Reverse Index
+
+| API Endpoint | Consumed By (Pages) |
+|--------------|---------------------|
+| `POST /api/auth/login` | Login |
+| `POST /api/auth/register/patient` | Patient Registration |
+| `POST /api/auth/register/doctor` | Doctor Registration |
+| `POST /api/auth/2fa/verify` | 2FA Verification |
+| `POST /api/auth/forgot-password` | Forgot Password |
+| `POST /api/auth/reset-password` | Reset Password |
+| `POST /api/auth/verify-email` | Email Verification |
+| `GET /api/auth/me` | Patient Dashboard, Patient Profile/Settings |
+| `POST /api/auth/logout` | All authenticated pages |
+| `GET /api/admin/doctors` | Doctor Search, Doctors |
+| `GET /api/admin/doctors/:id` | Public Doctor Profile, Doctor Profile |
+| `GET /api/admin/patients` | Patients |
+| `GET /api/admin/patients/:id` | Patient Profile |
+| `GET /api/admin/users` | Users & Admins |
+| `GET /api/admin/users/:id` | User Details |
+| `GET /api/admin/bookings` | Bookings |
+| `GET /api/admin/bookings/:id` | Booking Details |
+| `GET /api/admin/waiting-list` | Waiting List |
+| `GET /api/admin/services` | Book Appointment, Doctor Services |
+| `GET /api/admin/audit-logs` | Audit Log |
+| `GET /api/admin/deletion-requests` | Deletion Requests |
+| `GET /api/notifications` | Notifications Center |
+| `GET /api/doctor/dashboard` | Doctor Dashboard |
+| `GET /api/doctor/bookings?status=pending` | Pending Bookings |
+| `GET /api/doctor/bookings/:bookingId` | Booking Details |
+| `GET /api/doctor/waiting-list` | Waiting List |
+| `GET /api/doctor/visits/:visitId/clinical-summary` | Patient Visit / Clinical Summary |
+| `GET /api/doctor/profile/verification-status` | Doctor Verification Status |
+| `GET /api/doctor/portfolio` | Doctor Portfolio Editor |
+| `GET /api/patients/:patientId/medical-history` | Medical History |
+| `POST /api/admin/reviews/:id` | Submit Review |
+| `GET /api/admin/bookings/:id` | Medical Report |
+| `POST /api/admin/bookings` | Book Appointment |
+| `GET /api/admin/services` | Book Appointment, Doctor Services |
+| `PATCH /api/queue/:bookingItemId/decline` | First Decline Warning, Appointment Cancelled |
+| `PATCH /api/queue/:bookingItemId/confirm` | Turn Notification |
+| `GET /api/queue/:bookingItemId` | Turn Notification |
+
+---
+
 ## 📋 Page Documentation Template
 
 Every page is documented using this template:
@@ -791,6 +915,169 @@ users (1) ───< (N) doctorportfolios (1) ───< (N) doctorworks
 
 ---
 
+## 🤖 AI Scheduling Prediction
+
+### Overview
+
+Doctory adds two classical machine-learning predictions to support the doctor's booking and queue workflow:
+
+1. **Consultation-duration regression** — predicts how many minutes the current patient is likely to spend with the doctor (`predicted_duration_minutes`).
+2. **Patient no-show classification** — predicts the probability that the patient will be absent (`no_show_probability`, 0.0 to 1.0).
+
+The AI component **only calculates predictions**. The existing Node.js Express backend remains the owner of MongoDB access, booking state, queue ordering, reminders, confirmation requirements, deposits, and all final business decisions. The Python service never touches the database, never rejects or cancels a booking, and never receives patient identifiers.
+
+The first version uses manually researched, manually generated, and manually reviewed **synthetic data**. After real appointments accumulate, the pipeline is retrained manually with approved real data. Models are classical supervised models trained with scikit-learn — no pretrained medical model or LLM is required.
+
+### Prediction Targets
+
+| Target | Type | Meaning |
+|--------|------|---------|
+| `predicted_duration_minutes` | Regression | Estimated consultation duration in minutes (this patient only, not waiting time) |
+| `no_show_probability` | Classification | Probability of absence, 0.0 to 1.0 |
+| `risk_level` | Derived | `normal` or `high`, computed by backend from the configured threshold |
+
+### Allowed Feature Groups
+
+The request sent from Node.js to Python may contain:
+
+- **Doctor/service context**: doctor/portfolio identifier, specialty, service type, configured service duration.
+- **Appointment context**: date, time, day of week, time period, queue position, booking lead time, new vs rescheduled.
+- **Patient profile/history**: age, prior visit count, prior completed count, prior cancelled count, prior no-show count, historical attendance rate, previous average duration.
+- **Medical context**: structured chronic-disease flags, controlled visit-reason/category.
+- **Patient problem description**: short free-text (sanitized, no direct identifiers).
+
+### Privacy & Consent
+
+- The patient must agree to documented use of submitted information for scheduling prediction.
+- Only the minimum useful description is collected and retained.
+- **Direct identifiers are excluded from model features.**
+- Access to raw medical data, derived features, labels, and prediction logs is role-controlled and documented.
+- Structured categories and a minimized/sanitized description are preferred; raw text retention has a defined access/retention rule.
+- Raw medical text is **never** sent to an external pretrained model.
+
+### High-Risk Booking Policy
+
+- A high no-show prediction does **not** reject or cancel a booking.
+- The booking remains allowed and receives a `high_risk` marker.
+- The backend can require confirmation, request a deposit, and schedule reminders per configuration.
+- Deposit is initially optional; can become required for high-risk bookings after enough real data and team approval.
+- **The backend, not the model, decides which actions are required.**
+
+### Prediction Timing
+
+- Request predictions **when a booking is created**.
+- If booking data changes, replace the affected booking and request a new prediction.
+- Do not recompute merely because an earlier queue consultation finishes.
+- Queue advancement → reminders + "arrive earlier if possible" is operational logic, not new inference.
+
+### Data Contract
+
+**Runtime prediction request** (Node → Python):
+
+```json
+{
+  "feature_schema_version": "booking-features-v1",
+  "model_version": "duration-v1.2.0-no-show-v1.1.0",
+  "correlation_id": "prediction-request-abc123",
+  "features": {
+    "doctor_id": "anon_doc_07",
+    "specialty": "cardiology",
+    "service_type": "consultation",
+    "configured_service_duration": 20,
+    "appointment_time": "14:30",
+    "day_of_week": "saturday",
+    "time_period": "afternoon",
+    "queue_position": 4,
+    "booking_lead_time_hours": 52,
+    "is_rescheduled": false,
+    "patient_age": 42,
+    "prior_visit_count": 3,
+    "prior_completed_count": 2,
+    "prior_cancelled_count": 1,
+    "prior_no_show_count": 0,
+    "attendance_rate": 0.67,
+    "avg_previous_duration": 21.5,
+    "chronic_conditions": { "diabetes": true, "hypertension": true },
+    "visit_reason_category": "follow_up",
+    "problem_description": "متابعة ضغط وصداع متكرر"
+  }
+}
+```
+
+**Runtime prediction response** (Python → Node):
+
+```json
+{
+  "predicted_duration_minutes": 24.5,
+  "no_show_probability": 0.72,
+  "risk_level": "high",
+  "model_version": "duration-v1.2.0-no-show-v1.1.0",
+  "feature_schema_version": "booking-features-v1",
+  "predicted_at": "2026-11-01T14:20:56Z",
+  "correlation_id": "prediction-request-abc123",
+  "warnings": [],
+  "data_quality": {
+    "used_fallback_features": false,
+    "missing_optional_fields": []
+  }
+}
+```
+
+Node stores a **prediction snapshot** inside the booking item — the result and metadata copied at booking time. This makes the booking explainable later even if a newer model is trained tomorrow. Replacing the model artifact does not silently rewrite old bookings.
+
+### Python Prediction Service Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Availability, loaded model versions, readiness |
+| `POST /predict` | Validate feature payload and return both predictions |
+| `GET /model-info` (future) | Non-sensitive version and schema information |
+
+**The service must not:** connect to MongoDB, mutate bookings, send reminders, or require patient identifiers.
+
+### Node.js Backend Integration
+
+The existing `services/aiService.js` is the **only Node boundary** for the Python service. Routes and controllers must not call Python directly.
+
+The service owns: base URL + timeout config, request validation/normalization, correlation IDs, response schema validation, retry policy (safe idempotent requests only), explicit error types (`AI_UNAVAILABLE`, `AI_INVALID_RESPONSE`, `AI_TIMEOUT`, `AI_STALE_MODEL`).
+
+**Booking creation flow:**
+1. Authenticate and validate patient request.
+2. Validate and sanitize structured + text medical inputs.
+3. Verify consent.
+4. Retrieve doctor/service and existing patient history from MongoDB.
+5. Build runtime feature payload.
+6. Call `aiService.predictBooking()`.
+7. Store prediction snapshot in `BookingItem`.
+8. Mark high-risk status when threshold is reached.
+9. Apply confirmation, deposit, reminder requirements from config.
+10. Create booking and return normal response + prediction-derived status.
+
+**The AI result must not bypass existing authorization, duplicate-booking, capacity, or queue validations.**
+
+**Fallback:** If Python is unavailable or times out — allow booking using the configured default duration, mark prediction status as `fallback`, do not mark high-risk based on missing data, log and expose an operational alert.
+
+### Configuration
+
+Add environment/configuration for: Python service URL, request timeout, authentication secret (deployed), duration fallback/default, no-show high-risk threshold, confirmation requirement, deposit mode (`optional` initially), reminder timing, model version pinning, logging/retention controls.
+
+Thresholds and policy must not be embedded in route code.
+
+### Testing
+
+- **Python service**: health/readiness, valid prediction, missing/invalid fields, missing artifact behavior, response schema, no raw medical text in logs.
+- **Node/backend**: successful booking with prediction snapshot, high-risk booking remains allowed with configured actions, normal-risk booking does not receive high-risk actions, changed booking data causes fresh prediction, queue movement sends reminders without new model call, timeout/unavailable service uses fallback, authorization and duplicate-booking unchanged.
+
+### Explicit Non-Goals
+
+- The model will not diagnose patients or recommend treatment.
+- The model will not directly access the database.
+- The model will not automatically reject or cancel patients.
+- The first version will not require deposits for every high-risk booking.
+- The first version will not perform automatic retraining.
+
+---
+
 ## ✅ Checklist
 
 ### Infrastructure — ✅ Complete
@@ -917,6 +1204,29 @@ users (1) ───< (N) doctorportfolios (1) ───< (N) doctorworks
 - [ ] Prescription OCR
 - [ ] Clinical analytics
 
+### AI Scheduling Prediction — ❌ Not implemented
+
+- [ ] `ml/service/app.py` — Python FastAPI prediction service (`GET /health`, `POST /predict`)
+- [ ] `ml/service/schemas.py` — Pydantic request/response schemas
+- [ ] `ml/service/model_loader.py` — load/save versioned scikit-learn artifacts
+- [ ] `ml/train/train.py` — training pipeline (validation, split, preprocess, train, evaluate)
+- [ ] `ml/train/evaluate.py` — MAE/RMSE/ROC-AUC/calibration reporting
+- [ ] `ml/data/generate_synthetic.py` — synthetic dataset generator (reviewed by team)
+- [ ] `ml/artifacts/` — versioned model artifacts (.joblib) + preprocessing + feature schema
+- [ ] `ml/Dockerfile` — Python service container (Python 3.12)
+- [ ] `services/aiService.js` — Node.js boundary for Python service (base URL, timeout, correlation IDs, retry, error types)
+- [ ] `models/BookingItem.entity.js` — add `prediction` snapshot, `confirmation_required`, `deposit_required`, `reminder_state`, `actual_duration_minutes`, `no_show`, outcome fields
+- [ ] `models/PredictionLog.entity.js` — optional separate collection for prediction audit log
+- [ ] `config/env-config.js` — add `prediction` block (base URL, timeout, API key, fallback duration, high-risk threshold, deposit mode, model version pinning)
+- [ ] `.env` / `.env.example` — add `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `NO_SHOW_HIGH_RISK_THRESHOLD`, `DEFAULT_CONSULTATION_MINUTES`, `DEPOSIT_MODE`, `AI_MODEL_VERSION`, `AI_FEATURE_SCHEMA_VERSION`
+- [ ] `scripts/migrate.js` — ensure indexes on PredictionLog and BookingItem prediction fields
+- [ ] `scripts/seed.js` — seed sample prediction snapshots on booking items
+- [ ] `docker-compose.dev.yml` — add `ai` service container
+- [ ] Integrate prediction into booking creation flow (consent → features → call aiService → store snapshot → apply policy)
+- [ ] Integrate duration-based queue estimates and reminder triggers (no repeated inference on queue completion)
+- [ ] Fallback behavior: allow booking with default duration when Python unavailable
+- [ ] Tests: Python service health/predict, Node booking with prediction snapshot, fallback, high-risk policy
+
 ### Testing — ❌ Not implemented
 
 - [ ] Unit tests (Jest)
@@ -946,12 +1256,13 @@ users (1) ───< (N) doctorportfolios (1) ───< (N) doctorworks
 | **7. Doctor Module** | 4 weeks | Dashboard, bookings, waiting list, clinical summary, diagnosis, prescription, verification status, portfolio editor | All doctor-facing features | ⬜ Planned |
 | **8. Admin Module** | 4 weeks | Stats, doctor verification, users, patients, bookings, waiting list, services, audit log, deletion requests | Complete admin panel | ⬜ Planned |
 | **9. AI Integration** | 3 weeks | Symptom routing, prescription OCR, analytics | Clinical decision support | ⬜ Planned |
-| **10. Mobile App (Flutter)** | 4 weeks | Patient app and doctor app | Flutter applications | ⬜ Planned |
+| **10. AI Scheduling Prediction** | 4 weeks | Python ML service, Node boundary, BookingItem prediction fields, booking flow integration, queue estimates | Duration regression + no-show prediction service | ⬜ Planned |
+| **11. Mobile App (Flutter)** | 4 weeks | Patient app and doctor app | Flutter applications | ⬜ Planned |
 | **11. Views (EJS)** | 3 weeks | All 54 page templates, shared layout, assets | Complete web UI | ⬜ Planned |
 | **12. Testing & Optimization** | 2 weeks | Unit, integration, security, load testing; fixes | Tested and optimized application | ⬜ Planned |
 | **13. Documentation & Delivery** | 2 weeks | Final README, API docs, user manual, presentation | Complete handover | ⬜ Planned |
 
-**Total estimated timeline:** approximately 32 weeks
+**Total estimated timeline:** approximately 36 weeks
 
 ---
 

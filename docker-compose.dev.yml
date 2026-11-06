@@ -12,6 +12,10 @@ services:
     environment:
       NODE_ENV: development
       MONGO_URI: mongodb://${MONGO_USER:-root}:${MONGO_PASS:-rootpassword}@mongo:27017/${MONGO_DB_NAME:-clinic_db}?authSource=admin
+      AI_SERVICE_URL: http://ai:8000
+      NO_SHOW_HIGH_RISK_THRESHOLD: "0.70"
+      DEFAULT_CONSULTATION_MINUTES: "20"
+      DEPOSIT_MODE: optional
     volumes:
       # Mount source code so changes are reflected instantly
       - .:/app
@@ -19,6 +23,8 @@ services:
       - /app/node_modules
     depends_on:
       mongo:
+        condition: service_healthy
+      ai:
         condition: service_healthy
     networks:
       - doctory_net
@@ -37,6 +43,29 @@ services:
       - mongo_data_dev:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - doctory_net
+
+  ai:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: doctory_ai_dev
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PORT: "8000"
+      MODEL_VERSION: "duration-v1.0.0-no-show-v1.0.0"
+      FEATURE_SCHEMA_VERSION: "booking-features-v1"
+    volumes:
+      - ./ml:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 5

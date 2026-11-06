@@ -79,7 +79,7 @@ module.exports = {
     }
   },
 
-  // AI Configuration
+  // AI Configuration (OpenRouter - Symptom Routing / OCR / Clinical Analytics)
   ai: {
     baseUrl: process.env.BASEURL || 'https://openrouter.ai/api/v1',
     key: process.env.OPENROUTER_API_KEY || '',
@@ -88,6 +88,24 @@ module.exports = {
     modelName: process.env.MODEL_NAME || 'anthropic/claude-3.5-sonnet',
     temperature: parseFloat(process.env.TEMPERATURE) || 0.7,
     max_tokens: parseInt(process.env.MAX_TOKENS) || 1000
+  },
+
+  // AI Scheduling Prediction (Python ML Service - Duration + No-show)
+  prediction: {
+    serviceUrl: process.env.AI_SERVICE_URL || 'http://localhost:8000',
+    timeoutMs: parseInt(process.env.AI_SERVICE_TIMEOUT_MS) || 15000,
+    apiKey: process.env.AI_SERVICE_API_KEY || '',
+    defaultConsultationMinutes: parseInt(process.env.DEFAULT_CONSULTATION_MINUTES) || 20,
+    noShowHighRiskThreshold: parseFloat(process.env.NO_SHOW_HIGH_RISK_THRESHOLD) || 0.70,
+    depositMode: process.env.DEPOSIT_MODE || 'optional', // optional | required | disabled
+    confirmationRequiredForHighRisk: process.env.CONFIRMATION_REQUIRED_FOR_HIGH_RISK === 'true' || false,
+    modelVersion: process.env.AI_MODEL_VERSION || 'duration-v1.0.0-no-show-v1.0.0',
+    featureSchemaVersion: process.env.AI_FEATURE_SCHEMA_VERSION || 'booking-features-v1',
+    logging: {
+      dir: process.env.NODE_ENV === 'production' ? process.env.LOG_DIR : 'logs',
+      level: process.env.NODE_ENV === 'production' ? process.env.LEVEL : 'info'
+    },
+    retentionDays: parseInt(process.env.AI_RETENTION_DAYS) || 90
   },
 
   // RATELIMITE Configuration
