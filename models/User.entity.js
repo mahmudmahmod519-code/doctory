@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+
 const userSchema = new mongoose.Schema(
   {
     user_id: {
@@ -71,6 +72,41 @@ const userSchema = new mongoose.Schema(
     last_login: {
       type: Date
     },
+
+    // Used by the Auth module to store the TOTP (authenticator app) secret
+    secure_key: {
+      type: String,
+      trim: true
+    },
+    last_login: {
+      type: Date
+    },
+
+    // ---- Added for the Auth module ----
+    // Used by `protect` and refresh to reject tokens issued before the last password change
+    password_changed_at: {
+      type: Date
+    },
+    // Hashed one-time tokens from email links (never returned by default queries)
+    password_reset_token: {
+      type: String,
+      select: false
+    },
+    password_reset_expires: {
+      type: Date,
+      select: false
+    },
+    email_verification_token: {
+      type: String,
+      select: false
+    },
+    email_verification_expires: {
+      type: Date,
+      select: false
+    },
+    // ------------------------------------
+
+
     deleted_at: {
       type: Date,
       default: null
@@ -86,8 +122,8 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.index({ user_id: 1 });
-userSchema.index({ email: 1 });
+// userSchema.index({ user_id: 1 });
+// userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ status: 1 });
 
