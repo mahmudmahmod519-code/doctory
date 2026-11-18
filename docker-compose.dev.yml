@@ -8,7 +8,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - .env
+      - .env.example
     environment:
       NODE_ENV: development
       MONGO_URI: mongodb://${MONGO_USER:-root}:${MONGO_PASS:-rootpassword}@mongo:27017/${MONGO_DB_NAME:-clinic_db}?authSource=admin
