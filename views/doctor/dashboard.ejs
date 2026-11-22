@@ -1,1 +1,28 @@
-<!-- TODO: implement doctor dashboard view -->
+<%# GET /doctor/dashboard — API: GET /api/doctor/dashboard %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'dashboard', pageTitle: 'لوحة الطبيب' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">أهلاً دكتور</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">ملخص يومك: الطلبات، المرضى، والطابور.</p></div><a href="/doctor/waiting-list" class="h-12 px-6 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md hover:shadow-lift inline-flex items-center gap-2"><span class="material-symbols-outlined">groups</span>افتح قائمة الانتظار</a></header>
+<div id="vbanner"></div>
+<div id="root" class="flex flex-col gap-6"><div class="skeleton h-64 rounded-2xl"></div></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, statusChip, errorBlock, render } = Doctory;
+  const root = document.getElementById('root');
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/doctor/dashboard');
+      if (d.verification_status && d.verification_status !== 'approved') document.getElementById('vbanner').innerHTML = `<a href="/doctor/verification-status" class="flex items-center gap-3 p-4 rounded-xl bg-[#FFFBEB] text-[#B45309] font-body-md"><span class="material-symbols-outlined">warning</span>حسابك ${d.verification_status === 'pending' ? 'قيد مراجعة التوثيق' : 'يحتاج إعادة توثيق'} — بعض الميزات متوقفة. <strong class="mr-auto underline">التفاصيل</strong></a>`;
+      const rows = (d.appointments || []).map((a) => html`<li class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-low"><span class="num w-10 h-10 rounded-lg bg-primary-fixed text-primary flex items-center justify-center font-bold">${a.queue_number}</span><div class="min-w-0 flex-1"><p class="font-bold truncate">${a.patient_name}</p><p class="font-label-sm text-label-sm text-on-surface-variant"><span class="num">${fmt.time(a.time)}</span> · ${a.type === 'consulting' ? 'استشارة' : 'كشف'}</p></div>${statusChip(a.status)}${['accepted', 'completed'].includes(a.status) ? raw(html`<a href="/doctor/visits/${a.booking_item_id}/clinical-summary" class="h-9 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md text-label-md inline-flex items-center">الزيارة</a>`) : ''}</li>`).join('');
+      render(root, html`<div class="grid grid-cols-2 lg:grid-cols-4 gap-4" data-stagger>${raw(Kit.stat('pending_actions', 'طلبات بانتظارك', d.pending_count, 'warning'))}${raw(Kit.stat('groups', 'مرضى اليوم', d.today_patients))}${raw(Kit.stat('hourglass_top', 'في الانتظار الآن', d.waiting_count, 'teal'))}${raw(Kit.stat('task_alt', 'تمت خدمتهم', d.completed_count, 'success'))}</div>
+        <div class="grid lg:grid-cols-3 gap-6"><section class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold mb-3">مواعيد اليوم</h2><ul class="flex flex-col gap-2.5">${raw(rows || '<li class="py-8 text-center text-on-surface-variant">لا توجد مواعيد اليوم</li>')}</ul></section>
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-2" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold mb-1">اختصارات</h2>
+          <a href="/doctor/bookings/pending" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low"><span class="material-symbols-outlined text-primary">pending_actions</span>طلبات الحجز</a>
+          <a href="/doctor/waiting-list" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low"><span class="material-symbols-outlined text-primary">groups</span>قائمة الانتظار</a>
+          <a href="/doctor/portfolio" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low"><span class="material-symbols-outlined text-primary">badge</span>ملفي والخدمات</a></section></div>`);
+    } catch (e) { root.innerHTML = errorBlock(e, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

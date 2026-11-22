@@ -1,1 +1,34 @@
-<!-- TODO: implement doctor verification details view -->
+<%#
+  VIEW: admin/doctors/verification-details   ROUTE: GET /admin/doctors/verification/:id  — controller: getDoctorVerificationDetailsRender (locals: id)
+  Backend contract:
+    GET   /api/admin/doctors/:id/verification   -> { doctor, medical_id_image (URL served only to admins), attempts:[{ submitted_at, status, reason }] }
+    PATCH /api/admin/doctors/:id/approve        409 if not pending
+    PATCH /api/admin/doctors/:id/reject         body { reason (min 10 chars) }; 409 if not pending
+  Security: the medical ID image must be served through an admin-only endpoint (never a public static path).
+%>
+<%- include('../../layouts/admin-layout', { part: 'top', active: 'doctors', pageTitle: 'مراجعة التوثيق' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">مراجعة توثيق الطبيب</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">قارن بيانات الطبيب ببطاقة النقابة.</p></div><a href="/admin/doctors/verification" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>الطلبات</a></header>
+<div id="root"><div class="skeleton h-64 rounded-2xl"></div></div>
+<%- include('../../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render, statusChip } = Doctory; const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').pop(); const root = document.getElementById('root');
+  async function load() {
+    try {
+      const { data: v } = await api('GET', `/api/admin/doctors/${id}/verification`); const u = v.doctor, pending = u.status === 'pending';
+      const img = v.medical_id_image ? html`<img src="${v.medical_id_image}" alt="بطاقة النقابة" class="w-full rounded-xl border border-outline-variant" />` : '<div class="h-56 rounded-xl bg-surface-container flex flex-col items-center justify-center text-on-surface-variant gap-2"><span class="material-symbols-outlined text-[40px]">id_card</span>لا توجد صورة مرفوعة</div>';
+      render(root, html`<div class="grid lg:grid-cols-5 gap-6">
+        <section class="lg:col-span-3 bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-md font-bold mb-3">بطاقة النقابة</h2>${raw(img)}</section>
+        <section class="lg:col-span-2 flex flex-col gap-6"><div class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up"><div class="flex items-center gap-3">${Kit.avatar(u.name)}<div><h2 class="font-title-md font-bold">${u.name}</h2><p class="text-on-surface-variant">${u.specialty}</p></div></div>
+          <dl class="flex flex-col gap-2 font-body-md"><div class="flex justify-between"><dt class="text-on-surface-variant">البريد</dt><dd dir="ltr">${u.email}</dd></div><div class="flex justify-between"><dt class="text-on-surface-variant">الهاتف</dt><dd class="num" dir="ltr">${u.phone}</dd></div></dl>
+          ${raw(pending ? '<div class="flex gap-2 mt-2"><button id="ap" class="flex-1 h-12 rounded-lg bg-primary-container text-on-primary font-title-md">توثيق</button><button id="rj" class="flex-1 h-12 rounded-lg bg-surface-container-low text-error font-title-md">رفض</button></div>' : '<p class="p-3 rounded-xl bg-surface-container-low text-on-surface-variant text-center">هذا الطلب ليس قيد المراجعة</p>')}</div>
+        <div class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h3 class="font-title-md font-bold mb-3">سجل المحاولات</h3><ul class="flex flex-col gap-2">${raw(v.attempts.map((a) => html`<li class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between gap-2"><span class="num">${fmt.shortDate(a.submitted_at)}</span><span class="flex-1 truncate text-on-surface-variant">${a.reason || ''}</span>${statusChip(a.status)}</li>`).join(''))}</ul></div></section></div>`);
+      document.getElementById('ap')?.addEventListener('click', async () => { const r = await Doctory.confirm({ title: 'توثيق الطبيب', message: 'سيتمكن من استقبال الحجوزات.', confirmText: 'توثيق' }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/doctors/${id}/approve`))) location.href = '/admin/doctors/verification'; });
+      document.getElementById('rj')?.addEventListener('click', async () => { const r = await Doctory.confirm({ title: 'رفض التوثيق', message: 'اذكر السبب للطبيب.', confirmText: 'رفض', danger: true, withReason: true, reasonRequired: true, reasonMin: 10 }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/doctors/${id}/reject`, { reason: r.reason }))) location.href = '/admin/doctors/verification'; });
+    } catch (e) { root.innerHTML = errorBlock(e.status === 404 ? Object.assign(e, { message: 'الطلب غير موجود' }) : e, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<%# GET /admin/doctors — APIs: GET /api/admin/doctors, PATCH /api/admin/doctors/:id/approve | /reject %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'doctors', pageTitle: 'الأطباء' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الأطباء</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">إدارة الأطباء وطلبات التوثيق.</p></div></header>
+<div id="list"></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, api } = Doctory; const SPEC = ['قلب وأوعية دموية', 'أسنان', 'جلدية وتجميل', 'أطفال', 'عيون', 'باطنة'];
+  const TONE = { active: 'success', pending: 'warning', suspended: 'danger' }, LBL = { active: 'نشط', pending: 'قيد التوثيق', suspended: 'موقوف' };
+  Kit.list({ root: '#list', endpoint: '/api/admin/doctors', limit: 10, id: 'doctor_id',
+    tabs: { param: 'status', items: [['', 'الكل'], ['pending', 'قيد التوثيق'], ['active', 'نشط'], ['suspended', 'موقوف']], initial: new URLSearchParams(location.search).get('status') || '' },
+    filters: [{ name: 'q', type: 'search', placeholder: 'ابحث بالاسم أو البريد' }, { name: 'specialty', type: 'select', label: 'التخصص', options: [['', 'كل التخصصات'], ...SPEC.map((s) => [s, s])] }],
+    rowHref: (r) => '/admin/doctors/' + r.portfolio_id,
+    columns: [
+      { label: 'الطبيب', cell: (r) => raw(html`<div class="flex items-center gap-3">${Kit.avatar(r.name)}<div><p class="font-bold">${r.name}</p><p class="font-label-sm text-on-surface-variant" dir="ltr">${r.email}</p></div></div>`) },
+      { label: 'التخصص', cell: (r) => r.specialty },
+      { label: 'الحالة', cell: (r) => Kit.badge(LBL[r.status] || r.status, TONE[r.status]) },
+      { label: 'الجلسات', cls: 'num', cell: (r) => r.sessions_count ?? '—' },
+      { label: '', cls: 'text-left whitespace-nowrap', cell: (r) => r.status === 'pending' ? raw(html`<button data-act="approve" data-id="${r.portfolio_id}" class="h-9 px-3 rounded-lg bg-primary-container text-on-primary font-label-md">توثيق</button> <button data-act="reject" data-id="${r.portfolio_id}" class="h-9 px-3 rounded-lg text-error hover:bg-error-container/50 font-label-md">رفض</button>`) : '' }
+    ],
+    empty: { icon: 'stethoscope', title: 'لا يوجد أطباء مطابقون', text: 'جرّب تغيير البحث أو الفلاتر.' },
+    actions: async (act, id, btn, reload) => {
+      if (act === 'approve') { const r = await Doctory.confirm({ title: 'توثيق الطبيب', message: 'سيتمكن الطبيب من استقبال الحجوزات وسيصله بريد.', confirmText: 'توثيق' }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/doctors/${id}/approve`))) reload(); }
+      if (act === 'reject') { const r = await Doctory.confirm({ title: 'رفض التوثيق', message: 'سيصل الطبيب السبب ليعيد المحاولة.', confirmText: 'رفض', danger: true, withReason: true, reasonRequired: true, reasonMin: 10 }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/doctors/${id}/reject`, { reason: r.reason }))) reload(); }
+    } });
+});
+</script>
+</body>
+</html>

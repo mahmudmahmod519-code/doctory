@@ -1,0 +1,27 @@
+<%# GET /doctor/visits/:id/diagnosis — APIs: GET|PUT /api/doctor/visits/:visitId/diagnosis { diagnosis, secondary_diagnosis, diagnosis_category } %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'waiting', pageTitle: 'التشخيص' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">التشخيص</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">سجّل التشخيص الرئيسي والثانوي للزيارة.</p></div><a id="back" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>الملخص</a></header>
+<form id="f" class="max-w-3xl bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-4" novalidate data-animate="fade-up">
+  <div class="flex flex-col gap-1.5"><label for="diagnosis" class="font-label-md font-semibold">التشخيص الرئيسي <span class="text-error">*</span></label><textarea id="diagnosis" name="diagnosis" rows="4" maxlength="2000" class="field"></textarea><p data-error-for="diagnosis" class="hidden font-label-sm text-error"></p></div>
+  <div class="flex flex-col gap-1.5"><label for="secondary_diagnosis" class="font-label-md font-semibold">تشخيصات ثانوية (اختياري)</label><textarea id="secondary_diagnosis" name="secondary_diagnosis" rows="2" maxlength="2000" class="field"></textarea></div>
+  <div class="flex flex-col gap-1.5"><label for="diagnosis_category" class="font-label-md font-semibold">التصنيف (اختياري)</label><input id="diagnosis_category" name="diagnosis_category" class="field" placeholder="مثال: قلب وأوعية" /></div>
+  <div class="flex gap-3"><button id="save" class="h-12 px-8 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md">حفظ التشخيص</button><a id="next" class="h-12 px-6 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center">التالي: الروشتة</a></div>
+</form>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, setBusy, showFieldErrors, formToObject } = Doctory;
+  const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').filter(Boolean).slice(-2, -1)[0];
+  document.getElementById('back').href = '/doctor/visits/' + id + '/clinical-summary'; document.getElementById('next').href = '/doctor/visits/' + id + '/prescription';
+  const f = document.getElementById('f');
+  try { const { data } = await api('GET', '/api/doctor/visits/' + id + '/diagnosis'); const d = data.diagnosis; if (d) Object.keys(d).forEach((k) => { if (f.elements[k]) f.elements[k].value = d[k] || ''; }); } catch (_) {}
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault(); const v = formToObject(f);
+    if (!v.diagnosis) return showFieldErrors(f, { diagnosis: 'التشخيص الرئيسي مطلوب' }); showFieldErrors(f, {});
+    const btn = document.getElementById('save'); setBusy(btn, true, 'جارٍ الحفظ...');
+    try { await api('PUT', '/api/doctor/visits/' + id + '/diagnosis', v); Doctory.toast('تم حفظ التشخيص', 'success'); } catch (err) { Doctory.toast(err.message, 'error'); } finally { setBusy(btn, false); }
+  });
+});
+</script>
+</body>
+</html>

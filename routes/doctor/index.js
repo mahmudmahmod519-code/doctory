@@ -96,14 +96,14 @@
 // Query: status (pending|accepted|rejected|completed|cancelled), type, date_from, date_to,
 // page, limit, sort, order.
 // Returns: { items, page, limit, total } where each item holds booking_id, patient name,
-// service title, date, time, queue_number, type, status and the AI prediction snapshot.
+// service title, date, time, queue_number, type and status.
 // Requires authentication (doctor role) and ownership of the bookings.
 
 // GET /api/doctor/bookings/:bookingId
 // Get one booking of the logged-in doctor with its items.
 // Params: bookingId (booking ObjectId).
 // Returns: { status: 'success', data: { booking, items } } with the items ordered by queue_number.
-// The response contains only the patient data needed for the decision (name, phone, age, visit reason).
+// The response contains only the patient data needed for the decision (name, phone, age).
 // 404 when the booking does not exist or belongs to another doctor.
 // Requires authentication (doctor role) and ownership of the booking.
 
@@ -115,7 +115,7 @@
 // Business rules:
 // - The booking item status becomes 'accepted' and the patient is added to the waiting queue.
 // - The patient receives an in-app notification (booking_accepted) and a critical email.
-// - The queue number is assigned inside the session.
+// - An audit log entry is created and the queue number is assigned inside the session.
 // 409 when the booking is not pending or the session is already full.
 // Requires authentication (doctor role) and ownership of the booking.
 
@@ -127,6 +127,7 @@
 // Business rules:
 // - The booking item status becomes 'rejected' and the slot is freed.
 // - The patient receives an in-app notification (booking_rejected) and a critical email.
+// - An audit log entry is created with the rejection reason.
 // 400 when the reason is missing or too short, 409 when the booking is not pending.
 // Requires authentication (doctor role) and ownership of the booking.
 
@@ -135,7 +136,8 @@
 // Query: date (optional, defaults to today), type (optional: booking|consulting).
 // Returns: { status: 'success', data: { waiting, completed, removed, counters } }.
 // Every waiting patient holds queue_number, name, waiting_minutes and estimated_wait_minutes.
-// The estimate is calculated from the stored prediction snapshots — the model is not called again.
+// The estimate is derived from the average consultation duration of the session —
+// it is a simple calculation, not a model call.
 // Requires authentication (doctor role).
 
 // POST /api/doctor/waiting-list/call-next
@@ -145,6 +147,7 @@
 // Business rules:
 // - Only accepted items of the authenticated doctor are eligible.
 // - The patient receives a turn_warning in-app notification.
+// - The operation is recorded in the audit log.
 // 404 when there is no eligible patient left.
 // Requires authentication (doctor role).
 
@@ -164,7 +167,7 @@
 // Returns: { status: 'success', message, data: { diagnosis } }.
 // Business rules:
 // - Only the treating doctor can write the diagnosis.
-// - Updating an existing diagnosis keeps a single current record.
+// - Updating an existing diagnosis keeps a single current record and logs the change in the audit log.
 // 404 when the visit does not exist, 403 when the doctor is not the treating doctor.
 // Requires authentication (doctor role) and ownership of the visit.
 
@@ -209,6 +212,33 @@
 // Returns: { status: 'success', message, data: { portfolio } }.
 // Business rules:
 // - Only the authenticated doctor can edit their own portfolio.
-// - The change is applied immediately.
+// - The change is written to the audit log.
 // 400 when no field is provided or the validation fails.
 // Requires authentication (doctor role) and ownership of the portfolio.
+
+
+// ==========================================
+// ADDITIONS REQUIRED BY THE FRONTEND (not in the original spec)
+// ==========================================
+
+// GET /api/doctor/visits/:visitId/diagnosis
+// Returns the saved diagnosis so the editor page can be pre-filled.
+// Returns: { status: 'success', data: { diagnosis: { diagnosis, secondary_diagnosis, diagnosis_category } | null } }.
+// Requires authentication (doctor role) and being the treating doctor of the visit (403 otherwise).
+
+// POST /api/doctor/profile/medical-id
+// Re-upload the syndicate ID after a rejection (or to replace a pending one).
+// Body: multipart/form-data, field 'medical_id' (image/jpeg | image/png | image/webp, max 5MB).
+// Returns: { status: 'success', message, data: { verification_status: 'pending' } }.
+// Business rules: sets the verification status back to pending, keeps the attempt in the history,
+// notifies the admins, and is written to the audit log.
+// 400 for a missing/unsupported/oversized file. Requires authentication (doctor role).
+
+
+// ==========================================
+// MOUNTING (live)
+// ==========================================
+const router = require('express').Router();
+router.use('/doctor', require('./doctor.render.js'));
+// router.use('/api/doctor', require('./doctor.apis.js'));   // enable when doctor.apis.js is implemented
+module.exports = router;

@@ -1,1 +1,33 @@
-<!-- TODO: implement verification status view -->
+<%# GET /doctor/verification-status — APIs: GET /api/doctor/profile/verification-status, POST /api/doctor/profile/medical-id (multipart image) %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'verification', pageTitle: 'حالة التوثيق' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">حالة التوثيق</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">توثيق حسابك يفتح لك استقبال الحجوزات.</p></div></header>
+<div id="root"><div class="skeleton h-64 rounded-2xl"></div></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render, setBusy } = Doctory;
+  const root = document.getElementById('root');
+  const META = { approved: ['verified', 'text-success', 'تم توثيق حسابك', 'يمكنك استقبال الحجوزات بشكل كامل.'], pending: ['hourglass_top', 'text-warning', 'طلبك قيد المراجعة', 'يستغرق التوثيق عادةً يوماً إلى يومين عمل.'], rejected: ['gpp_bad', 'text-error', 'تم رفض التوثيق', 'راجع السبب وأعد رفع بطاقة النقابة.'] };
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/doctor/profile/verification-status'); const m = META[d.verification_status] || META.pending;
+      const hist = (d.attempts || []).map((a) => html`<li class="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low"><span class="num">${fmt.shortDate(a.submitted_at)}</span><span class="text-on-surface-variant flex-1 truncate">${a.reason || ''}</span>${Doctory.statusChip(a.status)}</li>`).join('');
+      render(root, html`<div class="max-w-3xl flex flex-col gap-6">
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card p-8 text-center" data-animate="fade-up"><span class="material-symbols-outlined icon-fill text-[56px] ${m[1]}">${m[0]}</span><h2 class="font-headline-md text-headline-md font-extrabold mt-2">${m[2]}</h2><p class="text-on-surface-variant mt-1">${m[3]}</p>${raw(d.rejection_reason ? html`<p class="mt-4 p-4 rounded-xl bg-error-container/40 text-on-error-container text-right"><strong>السبب:</strong> ${d.rejection_reason}</p>` : '')}</section>
+        ${raw(d.verification_status === 'approved' ? '' : html`<form id="up" class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up"><h3 class="font-title-md font-bold">${d.verification_status === 'pending' ? 'استبدال البطاقة المرفوعة' : 'ارفع بطاقة النقابة'}</h3><input type="file" name="medical_id" accept="image/jpeg,image/png,image/webp" class="field" aria-label="صورة البطاقة" /><p class="font-label-sm text-on-surface-variant">JPG أو PNG أو WebP، حتى 5 ميجا، والبيانات واضحة بالكامل.</p><p data-error-for="medical_id" class="hidden font-label-sm text-error"></p><button class="h-12 w-fit px-8 rounded-lg bg-primary-container text-on-primary font-title-md shadow-md">إرسال للمراجعة</button></form>`)}
+        ${raw(hist ? html`<section class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h3 class="font-title-md font-bold mb-3">سجل المحاولات</h3><ul class="flex flex-col gap-2">${raw(hist)}</ul></section>` : '')}</div>`);
+      const f = document.getElementById('up');
+      if (f) f.addEventListener('submit', async (e) => {
+        e.preventDefault(); const file = f.medical_id.files[0], err = {};
+        if (!file) err.medical_id = 'اختر صورة البطاقة'; else if (!/^image\/(jpeg|png|webp)$/.test(file.type)) err.medical_id = 'نوع الملف غير مدعوم'; else if (file.size > 5 * 1024 * 1024) err.medical_id = 'الحجم أكبر من 5 ميجا';
+        Doctory.showFieldErrors(f, err); if (Object.keys(err).length) return;
+        const fd = new FormData(); fd.append('medical_id', file); const b = f.querySelector('button'); setBusy(b, true, 'جارٍ الرفع...');
+        try { await api('POST', '/api/doctor/profile/medical-id', fd); Doctory.toast('تم إرسال البطاقة للمراجعة', 'success'); load(); } catch (x) { Doctory.toast(x.message, 'error'); setBusy(b, false); }
+      });
+    } catch (e) { root.innerHTML = errorBlock(e, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

@@ -108,3 +108,12 @@
 // - The message must not embed protected medical data — it references the subject through
 //   related_entity_type and related_entity_id only.
 // Requires authentication (admin|system).
+
+
+// ==========================================
+// MOUNTING (live)
+// ==========================================
+const router = require('express').Router();
+router.use('/', require('./notification.render.js'));
+// router.use('/api/notifications', require('./notification.apis.js'));   // enable when implemented
+module.exports = router;

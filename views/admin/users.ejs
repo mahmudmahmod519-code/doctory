@@ -1,0 +1,27 @@
+<%# GET /admin/users — APIs: GET|POST /api/admin/users, PATCH /status|/role %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'users', pageTitle: 'المستخدمون' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">المستخدمون</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">كل الحسابات: مرضى وأطباء ومديرون.</p></div><button id="new" class="h-12 px-6 rounded-lg bg-primary-container text-on-primary font-title-md shadow-md inline-flex items-center gap-2"><span class="material-symbols-outlined">person_add</span>مستخدم جديد</button></header>
+<div id="list"></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, fmt, api } = Doctory; const TONE = { active: 'success', pending: 'warning', suspended: 'danger', deleted: 'neutral' }, LBL = { active: 'نشط', pending: 'معلّق', suspended: 'موقوف', deleted: 'محذوف' };
+  const ctl = Kit.list({ root: '#list', endpoint: '/api/admin/users', limit: 10,
+    tabs: { param: 'role', items: [['', 'الكل'], ['patient', 'مرضى'], ['doctor', 'أطباء'], ['admin', 'مديرون']] },
+    filters: [{ name: 'q', type: 'search', placeholder: 'ابحث بالاسم أو البريد' }, { name: 'status', type: 'select', label: 'الحالة', options: [['', 'كل الحالات'], ['active', 'نشط'], ['suspended', 'موقوف']] }],
+    rowHref: (r) => '/admin/users/' + r.user_id,
+    columns: [
+      { label: 'المستخدم', cell: (r) => raw(html`<div class="flex items-center gap-3">${Kit.avatar(r.name)}<div><p class="font-bold">${r.name}</p><p class="font-label-sm text-on-surface-variant" dir="ltr">${r.email}</p></div></div>`) },
+      { label: 'الدور', cell: (r) => Kit.roleBadge(r.role) },
+      { label: 'الحالة', cell: (r) => Kit.badge(LBL[r.status] || r.status, TONE[r.status]) },
+      { label: '2FA', cell: (r) => r.enable_2fa ? '✓' : '—' },
+      { label: 'آخر دخول', cell: (r) => fmt.relative(r.last_login) }
+    ], empty: { icon: 'group', title: 'لا يوجد مستخدمون', text: 'جرّب تغيير الفلاتر.' } });
+  document.getElementById('new').addEventListener('click', async () => {
+    const v = await Kit.dialog({ title: 'مستخدم جديد', text: 'سيصله رابط لتعيين كلمة المرور.', fields: [{ name: 'name', label: 'الاسم', required: true, minLength: 3 }, { name: 'email', label: 'البريد', type: 'email', required: true }, { name: 'phone', label: 'الهاتف', type: 'tel' }, { name: 'role', label: 'الدور', type: 'select', required: true, options: [['patient', 'مريض'], ['doctor', 'طبيب'], ['admin', 'مدير']] }], submitText: 'إنشاء' });
+    if (v && await Kit.act(() => api('POST', '/api/admin/users', v))) location.reload();
+  });
+});
+</script>
+</body>
+</html>

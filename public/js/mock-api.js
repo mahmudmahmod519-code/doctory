@@ -138,5 +138,5 @@
     return null; // fall through to the real network
   }
 
-  window.DoctoryMock = { handle, doctors };
+  window.DoctoryMock = { handle, doctors, ok, list, day, wait, extend(r) { routes.unshift(...r); } };
 })();

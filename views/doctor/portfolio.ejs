@@ -1,0 +1,40 @@
+<%# GET /doctor/portfolio — APIs: GET|PATCH /api/doctor/portfolio, POST|PATCH|DELETE /api/doctor-works (services → admin approval) %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'portfolio', pageTitle: 'ملفي والخدمات' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">ملفي والخدمات</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">بياناتك التي تظهر للمرضى وخدماتك وأسعارها.</p></div><button id="addsvc" class="h-12 px-6 rounded-lg bg-primary-container text-on-primary font-title-md shadow-md inline-flex items-center gap-2"><span class="material-symbols-outlined">add</span>خدمة جديدة</button></header>
+<div id="root" class="grid lg:grid-cols-5 gap-6"><div class="skeleton h-80 rounded-2xl lg:col-span-2"></div><div class="skeleton h-80 rounded-2xl lg:col-span-3"></div></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render, setBusy, statusChip } = Doctory;
+  const root = document.getElementById('root'); let services = [];
+  const SF = [{ name: 'title', label: 'اسم الخدمة', required: true, minLength: 3 }, { name: 'description', label: 'الوصف', type: 'textarea', full: true }, { name: 'price', label: 'السعر (ج.م)', type: 'number', required: true }, { name: 'duration_session', label: 'مدة الجلسة (دقيقة)', type: 'number', required: true }, { name: 'working_time', label: 'مواعيد العمل', full: true }];
+  async function load() {
+    try {
+      const { data } = await api('GET', '/api/doctor/portfolio'); const p = data.portfolio; services = data.services;
+      const svc = services.map((s) => html`<li class="p-4 rounded-xl bg-surface-container-low flex flex-col gap-2"><div class="flex items-start justify-between gap-2"><div><p class="font-bold">${s.title}</p><p class="font-label-md text-on-surface-variant"><span class="num">${fmt.money(s.price)}</span> · <span class="num">${s.duration_session}</span> د</p></div>${statusChip(s.status === 'active' ? 'approved' : s.status)}</div>${raw(s.rejection_reason ? html`<p class="font-label-md text-error">${s.rejection_reason}</p>` : '')}<div class="flex gap-2"><button data-edit="${s.work_id}" class="h-9 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md">تعديل</button><button data-del="${s.work_id}" class="h-9 px-3 rounded-lg text-error hover:bg-error-container/50 font-label-md">حذف</button></div></li>`).join('');
+      render(root, html`<form id="pf" class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3 h-fit" novalidate data-animate="fade-up"><h2 class="font-title-lg font-bold">بيانات الملف</h2>
+        <label class="font-label-md font-semibold" for="title">اللقب العلمي</label><input id="title" name="title" class="field" value="${p.title || ''}" />
+        <label class="font-label-md font-semibold" for="specialty">التخصص</label><input id="specialty" name="specialty" class="field" value="${p.specialty || ''}" />
+        <label class="font-label-md font-semibold" for="phone_number">هاتف العيادة</label><input id="phone_number" name="phone_number" class="field" dir="ltr" value="${p.phone_number || ''}" />
+        <label class="font-label-md font-semibold" for="working_hours">ساعات العمل</label><input id="working_hours" name="working_hours" class="field" value="${p.working_hours || ''}" />
+        <button class="h-12 rounded-lg bg-primary-container text-on-primary font-title-md shadow-md mt-1">حفظ</button></form>
+        <section class="lg:col-span-3 bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg font-bold mb-3">الخدمات</h2><p class="font-label-md text-on-surface-variant mb-3">أي خدمة جديدة أو معدّلة تُراجع من الإدارة قبل ظهورها للمرضى.</p><ul class="grid sm:grid-cols-2 gap-3">${raw(svc || '<li class="col-span-full py-8 text-center text-on-surface-variant">لم تضف خدمات بعد</li>')}</ul></section>`);
+      document.getElementById('pf').addEventListener('submit', async (e) => { e.preventDefault(); const b = e.target.querySelector('button'); setBusy(b, true, 'جارٍ الحفظ...'); try { await api('PATCH', '/api/doctor/portfolio', Doctory.formToObject(e.target)); Doctory.toast('تم حفظ بيانات الملف', 'success'); } catch (x) { Doctory.toast(x.message, 'error'); } finally { setBusy(b, false); } });
+    } catch (e) { root.innerHTML = errorBlock(e, 'load'); }
+  }
+  window.load = load;
+  async function edit(s) {
+    const v = await Kit.dialog({ title: s ? 'تعديل الخدمة' : 'خدمة جديدة', text: s ? 'التعديل يعيد الخدمة للمراجعة.' : '', fields: SF.map((f) => ({ ...f, value: s ? s[f.name] : '' })), submitText: 'حفظ' });
+    if (v && await Kit.act(() => s ? api('PATCH', '/api/doctor-works/' + s.work_id, v) : api('POST', '/api/doctor-works', v))) load();
+  }
+  document.getElementById('addsvc').addEventListener('click', () => edit());
+  root.addEventListener('click', async (e) => {
+    const ed = e.target.closest('[data-edit]'), dl = e.target.closest('[data-del]');
+    if (ed) edit(services.find((s) => s.work_id === ed.dataset.edit));
+    if (dl) { const r = await Doctory.confirm({ title: 'حذف الخدمة', message: 'لن تظهر للمرضى بعد الحذف.', confirmText: 'حذف', danger: true }); if (r.ok && await Kit.act(() => api('DELETE', '/api/doctor-works/' + dl.dataset.del))) load(); }
+  });
+  load();
+});
+</script>
+</body>
+</html>

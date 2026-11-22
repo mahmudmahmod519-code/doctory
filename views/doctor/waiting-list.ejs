@@ -1,1 +1,23 @@
-<!-- TODO: implement waiting list view -->
+<%# GET /doctor/waiting-list — APIs: GET /api/doctor/waiting-list?date&type, POST /api/doctor/waiting-list/call-next %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'waiting', pageTitle: 'قائمة الانتظار' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">قائمة الانتظار</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">طابور اليوم لحظة بلحظة.</p></div><div class="flex flex-wrap gap-2"><input id="date" type="date" class="field !w-auto" aria-label="التاريخ" /><select id="type" class="field !w-auto" aria-label="النوع"><option value="">الكل</option><option value="booking">كشف</option><option value="consulting">استشارة</option></select><button id="next" class="h-12 px-6 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md inline-flex items-center gap-2"><span class="material-symbols-outlined">campaign</span>نادِ التالي</button></div></header>
+<div id="root" aria-live="polite"><div class="skeleton h-72 rounded-2xl"></div></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, errorBlock, render, fmt } = Doctory;
+  const root = document.getElementById('root'), date = document.getElementById('date'), type = document.getElementById('type'), next = document.getElementById('next');
+  date.value = fmt.isoDate(new Date());
+  async function load() {
+    try { const { data } = await api('GET', '/api/doctor/waiting-list', null, { query: { date: date.value, type: type.value } }); render(root, Kit.queueGroups(data, { canCall: true })); next.disabled = !(data.waiting || []).length; }
+    catch (e) { root.innerHTML = errorBlock(e, 'load'); }
+  }
+  window.load = load;
+  async function call(id) { if (await Kit.act(() => api('POST', '/api/doctor/waiting-list/call-next', id ? { booking_item_id: id } : {}))) load(); }
+  next.addEventListener('click', () => call()); root.addEventListener('click', (e) => { const b = e.target.closest('[data-call]'); if (b) call(b.dataset.call); });
+  date.addEventListener('change', load); type.addEventListener('change', load);
+  load(); setInterval(() => { if (!document.hidden) load(); }, 15000);
+});
+</script>
+</body>
+</html>

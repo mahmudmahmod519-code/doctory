@@ -1,1 +1,27 @@
-<!-- TODO: implement patient profile view -->
+<%#
+  VIEW: admin/patients/profile   ROUTE: GET /admin/patients/:id  — controller: getPatientDetailsRender (locals: id)
+  Backend contract:
+    GET /api/admin/patients/:id -> { patient:{ user_id, name, email, phone, age, address, status }, bookings:[{ booking_id, doctor, type, date, queue_number, status }], reports_count }
+  Privacy: admins see ONLY the number of reports, never medical content. 404 -> error block.
+%>
+<%- include('../../layouts/admin-layout', { part: 'top', active: 'patients', pageTitle: 'تفاصيل المريض' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">تفاصيل المريض</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">بيانات الحساب وسجل الحجوزات — بدون محتوى طبي.</p></div><a href="/admin/patients" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>المرضى</a></header>
+<div id="root"><div class="skeleton h-64 rounded-2xl"></div></div>
+<%- include('../../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render, statusChip } = Doctory; const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').pop(); const root = document.getElementById('root');
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/admin/patients/' + id); const u = d.patient;
+      const rows = d.bookings.map((b) => html`<tr class="border-t border-surface-container-high"><td class="px-4 py-3">${b.doctor}</td><td class="px-4 py-3">${b.type === 'consulting' ? 'استشارة' : 'كشف'}</td><td class="px-4 py-3">${fmt.shortDate(b.date)}</td><td class="px-4 py-3 num">${fmt.ticket(b.queue_number)}</td><td class="px-4 py-3">${statusChip(b.status)}</td></tr>`).join('');
+      render(root, html`<div class="grid lg:grid-cols-3 gap-6"><section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up"><div class="flex items-center gap-3">${Kit.avatar(u.name)}<div><h2 class="font-title-md font-bold">${u.name}</h2>${Kit.badge(u.status === 'active' ? 'نشط' : 'موقوف', u.status === 'active' ? 'success' : 'danger')}</div></div>
+        <dl class="flex flex-col gap-2 font-body-md"><div class="flex justify-between"><dt class="text-on-surface-variant">البريد</dt><dd dir="ltr">${u.email}</dd></div><div class="flex justify-between"><dt class="text-on-surface-variant">الهاتف</dt><dd class="num" dir="ltr">${u.phone}</dd></div><div class="flex justify-between"><dt class="text-on-surface-variant">السن</dt><dd class="num">${u.age}</dd></div><div class="flex justify-between"><dt class="text-on-surface-variant">المحافظة</dt><dd>${u.address}</dd></div><div class="flex justify-between"><dt class="text-on-surface-variant">تقارير طبية</dt><dd class="num">${d.reports_count} (عدد فقط)</dd></div></dl><a href="/admin/users/${u.user_id}" class="h-11 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md flex items-center justify-center">إدارة الحساب</a></section>
+        <section class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card overflow-hidden" data-animate="fade-up"><h3 class="font-title-md font-bold p-5 pb-2">سجل الحجوزات</h3><div class="overflow-x-auto"><table class="w-full min-w-[520px]"><thead><tr class="text-right text-on-surface-variant font-label-md"><th class="px-4 py-2">الطبيب</th><th class="px-4 py-2">النوع</th><th class="px-4 py-2">التاريخ</th><th class="px-4 py-2">الدور</th><th class="px-4 py-2">الحالة</th></tr></thead><tbody>${raw(rows)}</tbody></table></div></section></div>`);
+    } catch (e) { root.innerHTML = errorBlock(e.status === 404 ? Object.assign(e, { message: 'المريض غير موجود' }) : e, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

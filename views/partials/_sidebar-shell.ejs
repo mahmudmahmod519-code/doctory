@@ -1,0 +1,42 @@
+<%#
+  Shared sidebar shell for every portal (patient / doctor / admin). Include it from sidebar-<role>.ejs.
+  Locals: portal (label under the logo), items [{ key, href, icon, label, live?, badge?, group? }], active,
+          note { icon, title, text } (optional footer card)
+%>
+<%
+  const _active = typeof active !== 'undefined' ? active : '';
+  let _lastGroup = null;
+%>
+<div data-sidebar-scrim class="hidden fixed inset-0 z-40 bg-navy/50 backdrop-blur-sm lg:hidden"></div>
+<aside data-sidebar class="fixed top-0 right-0 z-50 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between py-6 px-4 transition-transform duration-300 translate-x-full lg:translate-x-0" aria-label="القائمة الجانبية">
+  <div class="flex flex-col gap-5 overflow-y-auto no-scrollbar">
+    <div class="flex items-center justify-between px-3 py-2">
+      <a href="/" class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[24px] icon-fill">local_hospital</span></span>
+        <span class="flex flex-col leading-tight"><span class="font-headline-sm text-headline-sm font-extrabold text-primary">دكتوري</span><span class="font-label-sm text-label-sm text-on-surface-variant">Doctory · المنظومة الطبية الذكية</span></span>
+      </a>
+      <button type="button" data-sidebar-toggle class="lg:hidden w-9 h-9 rounded-lg hover:bg-surface-container-low flex items-center justify-center" aria-label="إغلاق القائمة"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="h-px bg-surface-variant mx-2"></div>
+    <p class="px-3 font-label-sm text-label-sm text-on-surface-variant"><%= portal %></p>
+    <nav class="flex flex-col gap-1.5">
+      <% items.forEach(function (it) { const on = it.key === _active; %>
+        <% if (it.group && it.group !== _lastGroup) { _lastGroup = it.group; %><p class="px-3 pt-3 pb-1 font-label-sm text-label-sm text-outline"><%= it.group %></p><% } %>
+        <a href="<%= it.href %>" <% if (on) { %>aria-current="page"<% } %> class="group flex items-center justify-between px-3.5 py-2.5 rounded-xl font-label-md text-label-md transition-all <%= on ? 'bg-primary-container text-on-primary-container font-bold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface' %>">
+          <span class="flex items-center gap-3.5"><span class="material-symbols-outlined text-[20px] <%= on ? 'icon-fill' : '' %>"><%= it.icon %></span><span><%= it.label %></span></span>
+          <% if (it.live) { %><span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm <%= on ? 'bg-white/20 text-white' : 'bg-secondary-container text-on-secondary-container' %>">مباشر</span><% } %>
+          <% if (it.badge) { %><span data-unread-badge class="hidden min-w-5 h-5 px-1.5 rounded-full bg-error text-on-error flex items-center justify-center font-label-sm text-label-sm num"></span><% } %>
+        </a>
+      <% }) %>
+    </nav>
+  </div>
+  <div class="flex flex-col gap-3 px-2 pt-4">
+    <% if (typeof note !== 'undefined' && note) { %>
+    <div class="p-3.5 rounded-xl bg-surface-container-low flex flex-col gap-1.5">
+      <div class="flex items-center gap-2 text-secondary"><span class="material-symbols-outlined text-[18px]"><%= note.icon %></span><span class="font-label-sm text-label-sm"><%= note.title %></span></div>
+      <p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed"><%= note.text %></p>
+    </div>
+    <% } %>
+    <button type="button" data-logout class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors"><span class="material-symbols-outlined text-[20px]">logout</span><span>تسجيل الخروج</span></button>
+  </div>
+</aside>

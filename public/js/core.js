@@ -127,7 +127,12 @@
     completed: { label: 'مكتمل',         cls: 'bg-[#F1F5F9] text-[#475569]', dot: 'bg-outline' },
     cancelled: { label: 'ملغي',          cls: 'bg-error-container text-on-error-container', dot: 'bg-error' },
     active:    { label: 'نشط',           cls: 'bg-[#ECFDF5] text-[#047857]', dot: 'bg-success' },
-    expired:   { label: 'منتهي',         cls: 'bg-[#F1F5F9] text-[#475569]', dot: 'bg-outline' }
+    expired:   { label: 'منتهي',         cls: 'bg-[#F1F5F9] text-[#475569]', dot: 'bg-outline' },
+    suspended: { label: 'موقوف',         cls: 'bg-error-container text-on-error-container', dot: 'bg-error' },
+    approved:  { label: 'موثّق',          cls: 'bg-[#ECFDF5] text-[#047857]', dot: 'bg-success' },
+    deleted:   { label: 'محذوف',         cls: 'bg-[#F1F5F9] text-[#475569]', dot: 'bg-outline' },
+    waiting:   { label: 'في الانتظار',    cls: 'bg-[#FFFBEB] text-[#B45309]', dot: 'bg-warning' },
+    no_show:   { label: 'لم يحضر',        cls: 'bg-[#F1F5F9] text-[#475569]', dot: 'bg-outline' }
   };
   function statusChip(status) {
     const s = STATUS[status] || { label: status || '—', cls: 'bg-surface-container text-on-surface-variant', dot: 'bg-outline' };
@@ -160,7 +165,7 @@
   }
 
   // ---------- confirm modal (markup in views/partials/modal-confirm.ejs) ----------
-  function confirmDialog({ title = 'تأكيد الإجراء', message = '', confirmText = 'تأكيد', cancelText = 'إلغاء', danger = false, withReason = false } = {}) {
+  function confirmDialog({ title = 'تأكيد الإجراء', message = '', confirmText = 'تأكيد', cancelText = 'إلغاء', danger = false, withReason = false, reasonRequired = false, reasonMin = 0, reasonLabel = '' } = {}) {
     const dlg = document.getElementById('confirm-modal');
     if (!dlg) return Promise.resolve(window.confirm(message || title) ? { ok: true, reason: '' } : { ok: false });
     dlg.querySelector('[data-confirm-title]').textContent = title;
@@ -172,6 +177,11 @@
     ok.textContent = confirmText; cancel.textContent = cancelText;
     ok.className = ok.className.replace(/\bbg-\S+/g, '') + (danger ? ' bg-error' : ' bg-primary-container');
     reasonWrap.classList.toggle('hidden', !withReason); reason.value = '';
+    const reasonErr = dlg.querySelector('[data-confirm-reason-error]');
+    const reasonText = reasonWrap.querySelector('[data-confirm-reason-label]');
+    if (reasonText) reasonText.textContent = reasonLabel || (reasonRequired ? 'السبب (مطلوب)' : 'السبب (اختياري)');
+    if (reasonErr) { reasonErr.classList.add('hidden'); reasonErr.textContent = ''; }
+    ok.classList.toggle('bg-error', danger); ok.classList.toggle('bg-primary-container', !danger);
     dlg.classList.remove('hidden'); dlg.classList.add('flex');
     const panel = dlg.querySelector('[data-confirm-panel]');
     if (window.Motion && !reducedMotion()) {
@@ -186,7 +196,14 @@
         dlg.removeEventListener('click', onBackdrop); document.removeEventListener('keydown', onKey);
         resolve(val);
       };
-      const onOk = () => done({ ok: true, reason: reason.value.trim() });
+      const onOk = () => {
+        const v = reason.value.trim();
+        if (withReason && (reasonRequired || reasonMin) && v.length < Math.max(reasonMin, reasonRequired ? 1 : 0)) {
+          if (reasonErr) { reasonErr.textContent = reasonMin ? `اكتب السبب (${reasonMin} أحرف على الأقل)` : 'السبب مطلوب'; reasonErr.classList.remove('hidden'); }
+          reason.focus(); return;
+        }
+        done({ ok: true, reason: v });
+      };
       const onCancel = () => done({ ok: false });
       const onBackdrop = (e) => { if (e.target === dlg) onCancel(); };
       const onKey = (e) => { if (e.key === 'Escape') onCancel(); };

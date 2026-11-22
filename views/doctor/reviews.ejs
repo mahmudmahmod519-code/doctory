@@ -1,0 +1,19 @@
+<%# GET /doctor/reviews — API: GET /api/reviews (own reviews; doctor) %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'reviews', pageTitle: 'تقييماتي' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">تقييمات المرضى</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">ما يقوله مرضاك عن تجربتهم.</p></div></header>
+<div id="list"></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, fmt } = Doctory;
+  Kit.list({ root: '#list', endpoint: '/api/reviews', limit: 10,
+    columns: [
+      { label: 'التقييم', cell: (r) => raw(html`<span class="text-warning num font-bold">${'★'.repeat(r.rating)}<span class="text-outline-variant">${'★'.repeat(5 - r.rating)}</span></span>`) },
+      { label: 'التعليق', cell: (r) => r.feedback || '—' },
+      { label: 'التاريخ', cell: (r) => fmt.shortDate(r.created_at) }
+    ],
+    empty: { icon: 'reviews', title: 'لا توجد تقييمات بعد', text: 'ستظهر تقييمات المرضى هنا بعد زياراتهم.' } });
+});
+</script>
+</body>
+</html>

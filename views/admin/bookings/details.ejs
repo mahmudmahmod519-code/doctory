@@ -1,1 +1,39 @@
-<!-- TODO: implement booking details view -->
+<%#
+  VIEW: admin/bookings/details   ROUTE: GET /admin/bookings/:id  — controller: getBookingDetailsRender (locals: id)
+  Backend contract:
+    GET    /api/admin/bookings/:id            -> { booking:{ booking_id, doctor, type, date, time, booked, total, status }, items:[{ booking_item_id, queue_number, patient_name, phone, age, status }] }
+    PATCH  /api/admin/bookings/:id            body { total_patients } (status/date/time per spec); 409 if capacity < confirmed patients; cancelling cancels all pending/accepted items and notifies patients
+    DELETE /api/admin/bookings/:id            soft delete; 409 when the session still has confirmed (accepted) patients
+    PATCH  /api/admin/booking-items/:id       edit patient status / queue number
+    DELETE /api/admin/booking-items/:id       remove the patient from the session (soft delete, patient notified)
+    PATCH  /api/admin/booking-items/:id/restore
+  404 -> the page shows an error block.
+%>
+<%- include('../../layouts/admin-layout', { part: 'top', active: 'bookings', pageTitle: 'تفاصيل الجلسة' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">تفاصيل الجلسة</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">تعديل السعة وإدارة مرضى الجلسة.</p></div><a href="/admin/bookings" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>الجلسات</a></header>
+<div id="root"><div class="skeleton h-64 rounded-2xl"></div></div>
+<%- include('../../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render, statusChip } = Doctory; const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').pop(); const root = document.getElementById('root');
+  async function load() {
+    try {
+      const { data } = await api('GET', '/api/admin/bookings/' + id); const b = data.booking; window.__b = b;
+      const rows = data.items.map((i) => html`<tr class="border-t border-surface-container-high"><td class="px-4 py-3 num font-extrabold text-primary">${fmt.ticket(i.queue_number)}</td><td class="px-4 py-3 font-bold">${i.patient_name}</td><td class="px-4 py-3 num" dir="ltr">${i.phone}</td><td class="px-4 py-3">${statusChip(i.status)}</td><td class="px-4 py-3 text-left whitespace-nowrap">${['rejected', 'cancelled'].includes(i.status) ? Kit.iconBtn('restore', 'استعادة', 'data-restore="' + i.booking_item_id + '"') : Kit.iconBtn('delete', 'حذف من الجلسة', 'data-rm="' + i.booking_item_id + '"', 'danger')}</td></tr>`).join('');
+      render(root, html`<div class="flex flex-col gap-6"><section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-wrap items-center gap-6" data-animate="fade-up"><div><p class="font-label-sm text-on-surface-variant">الطبيب</p><p class="font-bold">${b.doctor}</p></div><div><p class="font-label-sm text-on-surface-variant">الموعد</p><p class="font-bold">${fmt.shortDate(b.date)} · <span class="num">${fmt.time(b.time)}</span></p></div><div><p class="font-label-sm text-on-surface-variant">السعة</p><p class="font-bold num">${b.booked} / ${b.total}</p></div><div>${statusChip(b.status)}</div><div class="mr-auto flex gap-2"><button id="cap" class="h-11 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md">تعديل السعة</button><button id="del" class="h-11 px-4 rounded-lg text-error hover:bg-error-container/50 font-label-md">حذف الجلسة</button></div></section>
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card overflow-x-auto" data-animate="fade-up"><table class="w-full min-w-[560px]"><thead><tr class="text-right text-on-surface-variant font-label-md"><th class="px-4 py-3">الدور</th><th class="px-4 py-3">المريض</th><th class="px-4 py-3">الهاتف</th><th class="px-4 py-3">الحالة</th><th></th></tr></thead><tbody>${raw(rows)}</tbody></table></section></div>`);
+    } catch (e) { root.innerHTML = errorBlock(e.status === 404 ? Object.assign(e, { message: 'الجلسة غير موجودة' }) : e, 'load'); }
+  }
+  window.load = load;
+  root.addEventListener('click', async (e) => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'cap') { const v = await Kit.dialog({ title: 'تعديل السعة', text: 'لا يمكن أن تقل عن عدد المؤكدين (' + window.__b.booked + ').', fields: [{ name: 'total_patients', label: 'السعة الكلية', type: 'number', value: window.__b.total, required: true }], submitText: 'حفظ' }); if (v && await Kit.act(() => api('PATCH', '/api/admin/bookings/' + id, { total_patients: +v.total_patients }))) load(); }
+    if (t.id === 'del') { const r = await Doctory.confirm({ title: 'حذف الجلسة', message: 'لا يمكن حذف جلسة بها مرضى مؤكدون.', confirmText: 'حذف', danger: true }); if (r.ok && await Kit.act(() => api('DELETE', '/api/admin/bookings/' + id))) location.href = '/admin/bookings'; }
+    if (t.dataset.rm) { const r = await Doctory.confirm({ title: 'حذف المريض من الجلسة', message: 'سيصله إشعار بالإلغاء.', confirmText: 'حذف', danger: true }); if (r.ok && await Kit.act(() => api('DELETE', '/api/admin/booking-items/' + t.dataset.rm))) load(); }
+    if (t.dataset.restore && await Kit.act(() => api('PATCH', '/api/admin/booking-items/' + t.dataset.restore + '/restore'))) load();
+  });
+  load();
+});
+</script>
+</body>
+</html>

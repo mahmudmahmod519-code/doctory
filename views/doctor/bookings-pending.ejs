@@ -1,1 +1,28 @@
-<!-- TODO: implement pending bookings view -->
+<%# GET /doctor/bookings/pending — APIs: GET /api/doctor/bookings?status=pending, PATCH /api/doctor/bookings/:id/accept | /reject (reason ≥10 chars) %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'pending', pageTitle: 'طلبات الحجز' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">طلبات الحجز</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">راجع الطلبات واقبل أو ارفض — الرفض يتطلب سبباً.</p></div></header>
+<div id="list"></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, fmt, api } = Doctory;
+  Kit.list({
+    root: '#list', endpoint: '/api/doctor/bookings', query: { status: 'pending' }, limit: 8,
+    filters: [{ name: 'type', type: 'select', label: 'النوع', options: [['', 'كل الأنواع'], ['booking', 'كشف'], ['consulting', 'استشارة']] }],
+    columns: [
+      { label: 'المريض', cell: (r) => raw(html`<div class="flex items-center gap-3">${Kit.avatar(r.patient_name)}<div><p class="font-bold">${r.patient_name}</p><p class="font-label-sm text-label-sm text-on-surface-variant">${r.reason_category || ''}</p></div></div>`) },
+      { label: 'الخدمة', cell: (r) => r.service_title },
+      { label: 'الموعد', cell: (r) => raw(html`${fmt.shortDate(r.date)} · <span class="num">${fmt.time(r.time)}</span>`) },
+      { label: '', cls: 'text-left whitespace-nowrap', cell: (r) => raw(html`<button data-act="accept" data-id="${r.booking_id}" class="h-9 px-4 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md">قبول</button> <button data-act="reject" data-id="${r.booking_id}" class="h-9 px-4 rounded-lg bg-surface-container-low text-error font-label-md text-label-md hover:bg-error-container/50">رفض</button>`) }
+    ],
+    empty: { icon: 'inbox', title: 'لا توجد طلبات معلّقة', text: 'ستظهر الطلبات الجديدة هنا فور وصولها.' },
+    actions: async (act, id, btn, reload) => {
+      if (act === 'accept') { if (await Kit.act(() => api('PATCH', `/api/doctor/bookings/${id}/accept`))) reload(); return; }
+      const r = await Doctory.confirm({ title: 'رفض طلب الحجز', message: 'سيصل المريض إشعار بالرفض والسبب.', confirmText: 'رفض الطلب', danger: true, withReason: true, reasonRequired: true, reasonMin: 10 });
+      if (r.ok && await Kit.act(() => api('PATCH', `/api/doctor/bookings/${id}/reject`, { reason: r.reason }))) reload();
+    }
+  });
+});
+</script>
+</body>
+</html>

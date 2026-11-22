@@ -1,1 +1,31 @@
-<!-- TODO: implement clinical summary view -->
+<%# GET /doctor/visits/:id/clinical-summary — API: GET /api/doctor/visits/:visitId/clinical-summary (treating doctor only) %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'waiting', pageTitle: 'الملخص السريري' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الملخص السريري</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">المعلومات المصرّح بها فقط للزيارة الحالية.</p></div><div class="flex gap-2"><a id="l-dx" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">diagnosis</span>التشخيص</a><a id="l-rx" class="h-11 px-5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">prescriptions</span>الروشتة</a></div></header>
+<div id="root"><div class="skeleton h-72 rounded-2xl"></div></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory;
+  const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').filter(Boolean).slice(-2, -1)[0];
+  document.getElementById('l-dx').href = '/doctor/visits/' + id + '/diagnosis'; document.getElementById('l-rx').href = '/doctor/visits/' + id + '/prescription';
+  const root = document.getElementById('root');
+  const sec = (icon, title, items, tone) => html`<section class="bg-surface-container-lowest rounded-2xl shadow-card p-5" data-animate="fade-up"><h2 class="font-title-md text-title-md font-bold flex items-center gap-2 mb-3"><span class="material-symbols-outlined ${tone || 'text-primary'}">${icon}</span>${title}</h2><ul class="flex flex-col gap-2">${raw(items || '<li class="text-on-surface-variant">لا يوجد</li>')}</ul></section>`;
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/doctor/visits/' + encodeURIComponent(id) + '/clinical-summary');
+      const li = (a, b) => html`<li class="p-3 rounded-xl bg-surface-container-low"><p class="font-bold">${a}</p><p class="font-label-md text-on-surface-variant">${b || ''}</p></li>`;
+      render(root, html`<div class="flex flex-col gap-6">
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 grid sm:grid-cols-4 gap-4" data-animate="fade-up"><div class="flex items-center gap-3 sm:col-span-2">${raw(Kit.avatar(d.patient.name))}<div><p class="font-title-md font-bold">${d.patient.name}</p><p class="font-label-md text-on-surface-variant"><span class="num">${d.patient.age}</span> سنة · <span class="num" dir="ltr">${d.patient.phone}</span></p></div></div><div><p class="font-label-sm text-on-surface-variant">سبب الزيارة</p><p class="font-bold">${d.visit.reason || '—'}</p></div><div><p class="font-label-sm text-on-surface-variant">الدور</p><p class="font-bold num">${fmt.ticket(d.visit.queue_number)} · ${fmt.time(d.visit.time)}</p></div></section>
+        <div class="grid lg:grid-cols-2 gap-6">
+          ${raw(sec('monitor_heart', 'الأمراض المزمنة', d.chronic_diseases.map((x) => li(x.name, x.since ? 'منذ ' + fmt.shortDate(x.since) : '')).join('')))}
+          ${raw(sec('warning', 'الحساسية', d.allergies.map((x) => li(x.name, x.reaction)).join(''), 'text-error'))}
+          ${raw(sec('medication', 'الأدوية الحالية', d.medications.map((x) => li(x.name, (x.dosage || '') + ' · ' + (x.frequency || ''))).join('')))}
+          ${raw(sec('history', 'الزيارات السابقة', d.previous_visits.map((x) => li(x.diagnosis || 'زيارة', fmt.shortDate(x.date) + ' · ' + x.doctor)).join('')))}
+        </div></div>`);
+    } catch (e) { root.innerHTML = errorBlock(e.status === 403 ? Object.assign(e, { message: 'لست الطبيب المعالج لهذه الزيارة' }) : e, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

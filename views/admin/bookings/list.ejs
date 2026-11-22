@@ -1,1 +1,24 @@
-<!-- TODO: implement bookings list view -->
+<%#
+  VIEW: admin/bookings/list      ROUTE: GET /admin/bookings  (auth + roles('admin'))  — controller: getBookingsRender
+  Locals: pageTitle, section='bookings', currentUser (via checkLogin)
+  Backend contract used by this page:
+    GET /api/admin/bookings?type=booking|consulting&status=&date=&doctor_id=&page=&limit=
+        -> { items:[{ booking_id, doctor, doctor_id, type, date, time, booked, total, status }], page, limit, total }
+  Notes: row click opens /admin/bookings/:id.
+%>
+<%- include('../../layouts/admin-layout', { part: 'top', active: 'bookings', pageTitle: 'الحجوزات' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الجلسات والحجوزات</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">كل الجلسات بسعتها وحالتها.</p></div></header>
+<div id="list"></div>
+<%- include('../../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { fmt, statusChip } = Doctory;
+  Kit.list({ root: '#list', endpoint: '/api/admin/bookings', limit: 10,
+    filters: [{ name: 'type', type: 'select', label: 'النوع', options: [['', 'كل الأنواع'], ['booking', 'كشف'], ['consulting', 'استشارة']] }, { name: 'status', type: 'select', label: 'الحالة', options: [['', 'كل الحالات'], ['pending', 'قيد المراجعة'], ['accepted', 'مقبول'], ['completed', 'مكتمل'], ['cancelled', 'ملغي']] }, { name: 'date', type: 'date', label: 'التاريخ' }],
+    rowHref: (r) => '/admin/bookings/' + r.booking_id,
+    columns: [{ label: 'الطبيب', cell: (r) => r.doctor }, { label: 'النوع', cell: (r) => r.type === 'consulting' ? 'استشارة' : 'كشف' }, { label: 'الموعد', cell: (r) => fmt.shortDate(r.date) + ' · ' + fmt.time(r.time) }, { label: 'السعة', cls: 'num', cell: (r) => r.booked + ' / ' + r.total }, { label: 'الحالة', cell: (r) => statusChip(r.status) }],
+    empty: { icon: 'event_busy', title: 'لا توجد جلسات', text: 'جرّب تغيير الفلاتر.' } });
+});
+</script>
+</body>
+</html>

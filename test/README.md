@@ -15,7 +15,7 @@ test/
 ```
 
 Modules: admin, auth, booking, booking-item, deletion-request, doctor, doctor-portfolio, doctor-work,
-notification, patient, report, review, static, user, audit-log.
+notification, patient, report, review, static, user.
 
 Every generated file lists the endpoints documented in `routes/<Module>/index.js` as `test.todo(...)`:
 replace a `todo` with a real test when its endpoint is implemented, so the todo count is the remaining work.

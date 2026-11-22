@@ -1,1 +1,23 @@
-<!-- TODO: implement doctor services view -->
+<%# GET /admin/services — APIs: GET /api/admin/services, PATCH /:id/status (active|rejected + reason), DELETE /:id %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'services', pageTitle: 'الخدمات' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">مراجعة الخدمات</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">اعتمد خدمات الأطباء أو ارفضها بسبب.</p></div></header>
+<div id="list"></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, fmt, api } = Doctory; const TONE = { active: 'success', pending: 'warning', rejected: 'danger' }, LBL = { active: 'معتمدة', pending: 'قيد المراجعة', rejected: 'مرفوضة' };
+  Kit.list({ root: '#list', endpoint: '/api/admin/services', limit: 10, id: 'service_id',
+    tabs: { param: 'status', items: [['pending', 'قيد المراجعة'], ['active', 'معتمدة'], ['rejected', 'مرفوضة'], ['', 'الكل']], initial: 'pending' },
+    filters: [{ name: 'q', type: 'search', placeholder: 'ابحث بالخدمة أو الطبيب' }],
+    columns: [{ label: 'الخدمة', cell: (r) => raw(html`<p class="font-bold">${r.title}</p><p class="font-label-sm text-on-surface-variant">${r.doctor}</p>`) }, { label: 'السعر', cls: 'num', cell: (r) => fmt.money(r.price) }, { label: 'المدة', cls: 'num', cell: (r) => r.duration + ' د' }, { label: 'الحالة', cell: (r) => Kit.badge(LBL[r.status] || r.status, TONE[r.status]) },
+      { label: '', cls: 'text-left whitespace-nowrap', cell: (r) => raw(html`${r.status !== 'active' ? raw(html`<button data-act="ok" data-id="${r.service_id}" class="h-9 px-3 rounded-lg bg-primary-container text-on-primary font-label-md">اعتماد</button> `) : ''}${r.status !== 'rejected' ? raw(html`<button data-act="no" data-id="${r.service_id}" class="h-9 px-3 rounded-lg text-error hover:bg-error-container/50 font-label-md">رفض</button> `) : ''}${Kit.iconBtn('delete', 'حذف', `data-act="del" data-id="${r.service_id}"`, 'danger')}`) }],
+    empty: { icon: 'medical_services', title: 'لا توجد خدمات', text: 'لا شيء بانتظار المراجعة.' },
+    actions: async (act, id, btn, reload) => {
+      if (act === 'ok' && await Kit.act(() => api('PATCH', `/api/admin/services/${id}/status`, { status: 'active' }))) reload();
+      if (act === 'no') { const r = await Doctory.confirm({ title: 'رفض الخدمة', message: 'سيصل الطبيب السبب.', confirmText: 'رفض', danger: true, withReason: true, reasonRequired: true, reasonMin: 5 }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/services/${id}/status`, { status: 'rejected', reason: r.reason }))) reload(); }
+      if (act === 'del') { const r = await Doctory.confirm({ title: 'حذف الخدمة', message: 'سيتم حذفها نهائياً من الطبيب.', confirmText: 'حذف', danger: true }); if (r.ok && await Kit.act(() => api('DELETE', `/api/admin/services/${id}`))) reload(); }
+    } });
+});
+</script>
+</body>
+</html>

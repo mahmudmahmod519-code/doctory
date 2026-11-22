@@ -12,6 +12,5 @@ describe('admin pages & flows', () => {
   test.todo('GET /admin/bookings/:id — renders for the allowed role and redirects/blocks otherwise');
   test.todo('GET /admin/waiting-list — renders for the allowed role and redirects/blocks otherwise');
   test.todo('GET /admin/services — renders for the allowed role and redirects/blocks otherwise');
-  test.todo('GET /admin/audit-log — renders for the allowed role and redirects/blocks otherwise');
   test.todo('GET /admin/deletion-requests — renders for the allowed role and redirects/blocks otherwise');
 });

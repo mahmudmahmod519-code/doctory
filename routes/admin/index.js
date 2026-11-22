@@ -12,6 +12,15 @@
 // Table view of all doctors with filters: specialty, status, search.
 // Includes pagination and actions: view profile, activate/suspend, soft delete.
 
+// GET /admin/doctors/verification
+// Render the doctor verification requests page (view: views/admin/doctors/verification-list.ejs).
+// Table of doctors with status=pending: name, specialty, email, quick approve / reject (reason required, min 10 chars).
+// Registered BEFORE /admin/doctors/:id.
+
+// GET /admin/doctors/verification/:id
+// Render the verification review page (view: views/admin/doctors/verification-details.ejs).
+// Shows the Medical ID image next to the doctor data, the attempts history and the approve / reject actions.
+
 // GET /admin/doctors/:id
 // Render individual doctor profile page.
 // Shows doctor details, working hours, sessions, patients, services, waiting list button.
@@ -237,3 +246,11 @@
 // Body: { decision: "approved" | "rejected", reason }.
 // Approved: hard delete or anonymize patient data (only exception to soft delete).
 // 409 if request already decided.
+
+// ==========================================
+// MOUNTING (live)
+// ==========================================
+const router = require('express').Router();
+router.use('/admin', require('./admin.render.js'));
+// router.use('/api/admin', require('./admin.apis.js'));   // enable when admin.apis.js is implemented
+module.exports = router;

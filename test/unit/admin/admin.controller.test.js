@@ -64,8 +64,6 @@ describe('admin controller', () => {
   test.todo('PATCH /api/admin/services/:id/status — rejects invalid input / wrong role / foreign ownership');
   test.todo('DELETE /api/admin/services/:id — returns the documented status code and body');
   test.todo('DELETE /api/admin/services/:id — rejects invalid input / wrong role / foreign ownership');
-  test.todo('GET /api/admin/audit-logs — returns the documented status code and body');
-  test.todo('GET /api/admin/audit-logs — rejects invalid input / wrong role / foreign ownership');
   test.todo('GET /api/admin/deletion-requests — returns the documented status code and body');
   test.todo('GET /api/admin/deletion-requests — rejects invalid input / wrong role / foreign ownership');
   test.todo('PATCH /api/admin/deletion-requests/:id — returns the documented status code and body');

@@ -1,1 +1,24 @@
-<!-- TODO: implement booking details view -->
+<%# GET /doctor/bookings/:id — API: GET /api/doctor/bookings/:bookingId → { booking, items } %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'pending', pageTitle: 'تفاصيل الجلسة' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">تفاصيل الجلسة</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">مرضى هذه الجلسة بأرقام الدور.</p></div><a href="/doctor/bookings/pending" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>الطلبات</a></header>
+<div id="root"><div class="skeleton h-64 rounded-2xl"></div></div>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, statusChip, errorBlock, render } = Doctory;
+  const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').pop();
+  const root = document.getElementById('root');
+  async function load() {
+    try {
+      const { data } = await api('GET', '/api/doctor/bookings/' + encodeURIComponent(id)); const b = data.booking;
+      const rows = data.items.map((i) => html`<tr class="border-t border-surface-container-high"><td class="px-4 py-3"><span class="num font-extrabold text-primary">${fmt.ticket(i.queue_number)}</span></td><td class="px-4 py-3 font-bold">${i.patient_name}</td><td class="px-4 py-3 num" dir="ltr">${i.phone}</td><td class="px-4 py-3 num">${i.age}</td><td class="px-4 py-3">${statusChip(i.status)}</td><td class="px-4 py-3 text-left">${['accepted', 'completed'].includes(i.status) ? raw(html`<a href="/doctor/visits/${i.booking_item_id}/clinical-summary" class="h-9 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md text-label-md inline-flex items-center">الزيارة</a>`) : ''}</td></tr>`).join('');
+      render(root, html`<section class="bg-surface-container-lowest rounded-2xl shadow-card overflow-hidden" data-animate="fade-up">
+        <div class="p-5 grid sm:grid-cols-4 gap-4 bg-surface-container-low/60"><div><p class="font-label-sm text-on-surface-variant">الطبيب</p><p class="font-bold">${b.doctor}</p></div><div><p class="font-label-sm text-on-surface-variant">النوع</p><p class="font-bold">${b.type === 'consulting' ? 'استشارة' : 'كشف'}</p></div><div><p class="font-label-sm text-on-surface-variant">الموعد</p><p class="font-bold">${fmt.shortDate(b.date)} · <span class="num">${fmt.time(b.time)}</span></p></div><div><p class="font-label-sm text-on-surface-variant">السعة</p><p class="font-bold num">${b.booked} / ${b.total_patients}</p></div></div>
+        <div class="overflow-x-auto"><table class="w-full min-w-[620px]"><thead><tr class="text-right text-on-surface-variant font-label-md"><th class="px-4 py-3">الدور</th><th class="px-4 py-3">المريض</th><th class="px-4 py-3">الهاتف</th><th class="px-4 py-3">السن</th><th class="px-4 py-3">الحالة</th><th></th></tr></thead><tbody>${raw(rows)}</tbody></table></div></section>`);
+    } catch (e) { root.innerHTML = errorBlock(e.status === 404 ? Object.assign(e, { message: 'هذه الجلسة غير موجودة أو ليست لك' }) : e, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

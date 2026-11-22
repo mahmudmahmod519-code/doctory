@@ -1,1 +1,28 @@
-<!-- TODO: implement admin dashboard view -->
+<%# GET /admin/dashboard — API: GET /api/admin/stats %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'dashboard', pageTitle: 'لوحة المدير' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">لوحة المدير</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">نظرة شاملة على العيادة اليوم.</p></div></header>
+<div id="root" class="flex flex-col gap-6"><div class="skeleton h-72 rounded-2xl"></div></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory; const root = document.getElementById('root');
+  const bars = (rows, label, val, tone) => { const max = Math.max(1, ...rows.map(val)); return rows.map((r) => html`<div class="flex items-center gap-3"><span class="w-28 shrink-0 font-label-md truncate">${label(r)}</span><div class="flex-1 h-3 rounded-full bg-surface-container overflow-hidden"><div class="h-full rounded-full ${tone}" style="width:${(val(r) / max * 100).toFixed(1)}%"></div></div><span class="num w-10 text-left font-label-md">${val(r)}</span></div>`).join(''); };
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/admin/stats');
+      const days = d.bookings_per_day, mx = Math.max(1, ...days.map((x) => x.count));
+      const chart = days.map((x) => html`<div class="flex-1 flex flex-col items-center gap-1 min-w-0" title="${fmt.shortDate(x.date)}: ${x.count}"><div class="w-full flex items-end h-40"><div class="w-full rounded-t-md bg-primary-container/80" style="height:${(x.count / mx * 100).toFixed(1)}%"></div></div><span class="num text-[10px] text-on-surface-variant">${new Date(x.date).getDate()}</span></div>`).join('');
+      const ST = { accepted: ['مقبول', 'bg-primary-container'], pending: ['قيد المراجعة', 'bg-warning'], completed: ['مكتمل', 'bg-success'], cancelled: ['ملغي', 'bg-outline'], rejected: ['مرفوض', 'bg-error'] };
+      render(root, html`<div class="grid grid-cols-2 lg:grid-cols-4 gap-4" data-stagger>
+        ${raw(Kit.stat('personal_injury', 'المرضى', d.patients_count))}${raw(Kit.stat('stethoscope', 'أطباء نشطون', d.doctors.active, 'teal'))}${raw(Kit.stat('event_available', 'حجوزات اليوم', d.bookings_today))}${raw(Kit.stat('hourglass_top', 'في الانتظار الآن', d.waiting_today, 'warning'))}
+        <a href="/admin/doctors/verification" class="contents">${raw(Kit.stat('verified_user', 'توثيقات معلّقة', d.pending_verifications, 'warning'))}</a><a href="/admin/deletion-requests" class="contents">${raw(Kit.stat('delete_forever', 'طلبات حذف', d.pending_deletions, 'danger'))}</a>${raw(Kit.stat('pause_circle', 'أطباء موقوفون', d.doctors.suspended, 'neutral'))}${raw(Kit.stat('pending', 'أطباء قيد المراجعة', d.doctors.pending, 'warning'))}</div>
+        <div class="grid lg:grid-cols-3 gap-6"><section class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg font-bold mb-4">الحجوزات خلال 14 يوماً</h2><div class="flex gap-1.5" role="img" aria-label="رسم الحجوزات اليومية">${raw(chart)}</div></section>
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up"><h2 class="font-title-lg font-bold">حسب الحالة</h2>${raw(bars(Object.entries(d.bookings_by_status), ([k]) => ST[k]?.[0] || k, ([, v]) => v, 'bg-primary-container'))}</section></div>
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up"><h2 class="font-title-lg font-bold">أكثر التخصصات طلباً</h2>${raw(bars(d.top_specialties, (r) => r.specialty, (r) => r.count, 'bg-secondary'))}</section>`);
+    } catch (e) { root.innerHTML = errorBlock(e, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

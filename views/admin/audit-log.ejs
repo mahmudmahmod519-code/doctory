@@ -1,0 +1,17 @@
+<%# GET /admin/audit-log — API: GET /api/admin/audit-logs (read-only, filterable) %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'audit', pageTitle: 'سجل التدقيق' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">سجل التدقيق</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">كل العمليات الحساسة، للقراءة فقط.</p></div></header>
+<div id="list"></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { html, raw, fmt, api } = Doctory; let actions = [];
+  try { actions = (await api('GET', '/api/audit-logs/actions')).data.actions; } catch (_) {}
+  Kit.list({ root: '#list', endpoint: '/api/admin/audit-logs', limit: 15,
+    filters: [{ name: 'actor', type: 'search', placeholder: 'اسم المنفّذ' }, { name: 'action', type: 'select', label: 'العملية', options: [['', 'كل العمليات'], ...actions.map((a) => [a, a])] }, { name: 'entity_type', type: 'select', label: 'الكيان', options: [['', 'كل الكيانات'], ['user', 'user'], ['booking', 'booking'], ['doctor', 'doctor'], ['report', 'report'], ['service', 'service']] }],
+    columns: [{ label: 'الوقت', cell: (r) => raw(html`<span class="num">${fmt.date(r.created_at)}</span>`) }, { label: 'المنفّذ', cell: (r) => raw(html`${r.actor_name} ${Kit.roleBadge(r.actor_role)}`) }, { label: 'العملية', cell: (r) => raw(html`<code dir="ltr" class="px-2 py-0.5 rounded bg-surface-container font-label-md">${r.action}</code>`) }, { label: 'الكيان', cell: (r) => raw(html`<span dir="ltr">${r.entity_type}:${r.entity_id}</span>`) }, { label: 'IP', cell: (r) => raw(html`<span class="num" dir="ltr">${r.ip}</span>`) }],
+    empty: { icon: 'history', title: 'لا توجد سجلات', text: 'جرّب تغيير الفلاتر.' } });
+});
+</script>
+</body>
+</html>

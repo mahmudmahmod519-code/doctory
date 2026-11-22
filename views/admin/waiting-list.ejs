@@ -1,1 +1,19 @@
-<!-- TODO: implement waiting list view -->
+<%# GET /admin/waiting-list — API: GET /api/admin/waiting-list?doctor_id&date (read-only monitor) %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'waiting', pageTitle: 'قائمة الانتظار' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">مراقبة قائمة الانتظار</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">اختر الطبيب والتاريخ لمشاهدة الطابور.</p></div><div class="flex flex-wrap gap-2"><select id="doc" class="field !w-auto" aria-label="الطبيب"></select><input id="date" type="date" class="field !w-auto" aria-label="التاريخ" /></div></header>
+<div id="root" aria-live="polite"></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, errorBlock, render, fmt, stateBlock } = Doctory; const root = document.getElementById('root'), doc = document.getElementById('doc'), date = document.getElementById('date'); date.value = fmt.isoDate(new Date());
+  async function load() {
+    if (!doc.value) return render(root, stateBlock({ icon: 'stethoscope', title: 'اختر طبيباً', text: 'ستظهر قائمة انتظاره هنا.' }));
+    try { const { data } = await api('GET', '/api/admin/waiting-list', null, { query: { doctor_id: doc.value, date: date.value } }); render(root, Kit.queueGroups(data)); } catch (e) { root.innerHTML = errorBlock(e, 'load'); }
+  }
+  window.load = load;
+  try { const { data } = await api('GET', '/api/admin/doctors', null, { query: { status: 'active', limit: 100 } }); doc.innerHTML = '<option value="">اختر الطبيب</option>' + data.items.map((d) => '<option value="' + Doctory.esc(d.portfolio_id) + '">' + Doctory.esc(d.name) + '</option>').join(''); } catch (_) {}
+  doc.addEventListener('change', load); date.addEventListener('change', load); load(); setInterval(() => { if (!document.hidden && doc.value) load(); }, 20000);
+});
+</script>
+</body>
+</html>

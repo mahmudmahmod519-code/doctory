@@ -1,1 +1,17 @@
-<!-- TODO: implement admin sidebar view -->
+<%# Admin sidebar. Locals: active — dashboard | doctors | patients | users | bookings | waiting | services | deletion | notifications | settings %>
+<%- include('_sidebar-shell', {
+  portal: 'لوحة الإدارة', active: (typeof active !== 'undefined' ? active : ''),
+  items: [
+    { key: 'dashboard', href: '/admin/dashboard',         icon: 'monitoring',     label: 'الإحصائيات', group: 'نظرة عامة' },
+    { key: 'doctors',   href: '/admin/doctors',           icon: 'stethoscope',    label: 'الأطباء',      group: 'المستخدمون' },
+    { key: 'patients',  href: '/admin/patients',          icon: 'personal_injury',label: 'المرضى',       group: 'المستخدمون' },
+    { key: 'users',     href: '/admin/users',             icon: 'admin_panel_settings', label: 'المستخدمون والأدمن', group: 'المستخدمون' },
+    { key: 'bookings',  href: '/admin/bookings',          icon: 'event_note',     label: 'الحجوزات',     group: 'العمليات' },
+    { key: 'waiting',   href: '/admin/waiting-list',      icon: 'groups',         label: 'قوائم الانتظار', group: 'العمليات', live: true },
+    { key: 'services',  href: '/admin/services',          icon: 'medical_services', label: 'خدمات الأطباء', group: 'العمليات' },
+    { key: 'deletion',  href: '/admin/deletion-requests', icon: 'delete_sweep',   label: 'طلبات حذف البيانات', group: 'الامتثال' },
+    { key: 'notifications', href: '/notifications',       icon: 'notifications',  label: 'الإشعارات', badge: true, group: 'حسابي' },
+    { key: 'settings',  href: '/user/settings',           icon: 'manage_accounts',label: 'الإعدادات والأمان', group: 'حسابي' }
+  ],
+  note: { icon: 'lock', title: 'خصوصية التقارير الطبية', text: 'الأدمن يرى عدد التقارير فقط، ولا يطّلع على محتواها.' }
+}) %>

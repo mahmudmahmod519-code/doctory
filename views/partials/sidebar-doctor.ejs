@@ -1,1 +1,15 @@
-<!-- TODO: implement doctor sidebar view -->
+<%# Doctor sidebar. Locals: active — dashboard | pending | waiting | portfolio | verification | reviews | notifications | settings %>
+<%- include('_sidebar-shell', {
+  portal: 'بوابة الطبيب', active: (typeof active !== 'undefined' ? active : ''),
+  items: [
+    { key: 'dashboard',    href: '/doctor/dashboard',        icon: 'dashboard',      label: 'لوحة التحكم' },
+    { key: 'pending',      href: '/doctor/bookings/pending', icon: 'pending_actions',label: 'طلبات الحجز', badge: false },
+    { key: 'waiting',      href: '/doctor/waiting-list',     icon: 'groups',         label: 'قائمة الانتظار', live: true },
+    { key: 'portfolio',    href: '/doctor/portfolio',        icon: 'badge',          label: 'ملفي والخدمات' },
+    { key: 'reviews',      href: '/doctor/reviews',          icon: 'reviews',        label: 'تقييمات المرضى' },
+    { key: 'verification', href: '/doctor/verification-status', icon: 'verified',    label: 'حالة التوثيق' },
+    { key: 'notifications',href: '/notifications',           icon: 'notifications',  label: 'الإشعارات', badge: true },
+    { key: 'settings',     href: '/user/settings',           icon: 'manage_accounts',label: 'الإعدادات والأمان' }
+  ],
+  note: { icon: 'shield_lock', title: 'التحقق بخطوتين إلزامي', text: 'حسابات الأطباء محمية برمز المصادقة في كل تسجيل دخول.' }
+}) %>

@@ -1,1 +1,32 @@
-<!-- TODO: implement doctor profile view -->
+<%#
+  VIEW: admin/doctors/profile    ROUTE: GET /admin/doctors/:id  — controller: getDoctorDetailsRender (locals: id)
+  Backend contract:
+    GET /api/admin/doctors/:id                -> { doctor, working_hours, stats:{ sessions_count, patients_count, average_rating }, services }
+    GET /api/admin/doctors/:id/verification   -> { doctor, medical_id_image, attempts:[{ submitted_at, status, reason }] }
+    GET /api/admin/doctors/:id/patients?page= -> paginated { booking_item_id, patient_name, type, date, queue_number, status }
+  A pending doctor gets a shortcut to the verification page. 404 -> error block.
+%>
+<%- include('../../layouts/admin-layout', { part: 'top', active: 'doctors', pageTitle: 'تفاصيل الطبيب' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">تفاصيل الطبيب</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">البيانات والتوثيق ومرضى الطبيب.</p></div><a href="/admin/doctors" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>الأطباء</a></header>
+<div id="root"><div class="skeleton h-64 rounded-2xl"></div></div><div id="pts" class="mt-6"></div>
+<%- include('../../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory; const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').pop(); const root = document.getElementById('root');
+  const TONE = { active: 'success', pending: 'warning', suspended: 'danger' }, LBL = { active: 'نشط', pending: 'قيد التوثيق', suspended: 'موقوف' };
+  async function load() {
+    try {
+      const [{ data: d }, { data: v }] = await Promise.all([api('GET', '/api/admin/doctors/' + id), api('GET', `/api/admin/doctors/${id}/verification`)]); const u = d.doctor;
+      render(root, html`<div class="grid lg:grid-cols-3 gap-6">
+        <section class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><div class="flex items-center gap-4 mb-5">${Kit.avatar(u.name)}<div class="flex-1"><h2 class="font-title-lg font-bold">${u.name}</h2><p class="text-on-surface-variant">${u.specialty}</p></div>${Kit.badge(LBL[u.status] || u.status, TONE[u.status])}</div>
+          <dl class="grid sm:grid-cols-2 gap-4"><div><dt class="font-label-sm text-on-surface-variant">البريد</dt><dd dir="ltr" class="text-right">${u.email}</dd></div><div><dt class="font-label-sm text-on-surface-variant">الهاتف</dt><dd class="num" dir="ltr">${u.phone}</dd></div><div><dt class="font-label-sm text-on-surface-variant">ساعات العمل</dt><dd>${d.working_hours}</dd></div><div><dt class="font-label-sm text-on-surface-variant">متوسط التقييم</dt><dd class="num">${d.stats.average_rating} ★</dd></div><div><dt class="font-label-sm text-on-surface-variant">الجلسات</dt><dd class="num">${d.stats.sessions_count}</dd></div><div><dt class="font-label-sm text-on-surface-variant">المرضى</dt><dd class="num">${d.stats.patients_count}</dd></div></dl></section>
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up"><h3 class="font-title-md font-bold">سجل التوثيق</h3><ul class="flex flex-col gap-2">${raw(v.attempts.map((a) => html`<li class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between gap-2"><span class="num">${fmt.shortDate(a.submitted_at)}</span>${Doctory.statusChip(a.status)}</li>`).join(''))}</ul>
+          ${raw(u.status === 'pending' ? `<div class="flex gap-2 mt-2"><button id="ap" class="flex-1 h-11 rounded-lg bg-primary-container text-on-primary font-label-md">توثيق</button><button id="rj" class="flex-1 h-11 rounded-lg bg-surface-container-low text-error font-label-md">رفض</button></div>` : '')}</section></div>`);
+    } catch (e) { root.innerHTML = errorBlock(e.status === 404 ? Object.assign(e, { message: 'الطبيب غير موجود' }) : e, 'load'); }
+  }
+  window.load = load; load();
+  Kit.list({ root: '#pts', endpoint: `/api/admin/doctors/${id}/patients`, limit: 8, columns: [{ label: 'المريض', cell: (r) => r.patient_name }, { label: 'النوع', cell: (r) => r.type === 'consulting' ? 'استشارة' : 'كشف' }, { label: 'التاريخ', cell: (r) => fmt.shortDate(r.date) }, { label: 'الدور', cls: 'num', cell: (r) => fmt.ticket(r.queue_number) }, { label: 'الحالة', cell: (r) => Doctory.statusChip(r.status) }], empty: { icon: 'groups', title: 'لا يوجد مرضى', text: '' } });
+});
+</script>
+</body>
+</html>

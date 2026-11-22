@@ -1,12 +1,13 @@
 <%# GET /patient/notifications — APIs: GET /api/notifications, PATCH /api/notifications/:id/read, PATCH /api/notifications/read-all, DELETE /api/notifications/:id %>
-<%- include('../layouts/patient-layout', { part: 'top', active: 'notifications', pageTitle: 'الإشعارات' }) %>
+<% const _r = (typeof portal !== 'undefined' && portal) || (typeof currentUser !== 'undefined' && currentUser && currentUser.role) || (typeof user !== 'undefined' && user && user.role) || 'patient'; const _portal = ['doctor','admin'].includes(_r) ? _r : 'patient'; %>
+<%- include('../layouts/' + _portal + '-layout', { part: 'top', active: 'notifications', pageTitle: 'الإشعارات' }) %>
 <header class="flex flex-wrap items-end justify-between gap-3" data-animate="fade-up">
   <div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الإشعارات</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">تنبيهات حجوزاتك ودورك وتقاريرك.</p></div>
   <button id="read-all" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">done_all</span>تحديد الكل كمقروء</button>
 </header>
 <div class="flex gap-2" role="tablist" aria-label="تصفية"><button data-f="" class="chip px-4 py-2 rounded-full font-label-md text-label-md">الكل</button><button data-f="false" class="chip px-4 py-2 rounded-full font-label-md text-label-md">غير مقروء</button></div>
 <ul id="list" class="bg-surface-container-lowest rounded-2xl shadow-card divide-y divide-surface-container-high overflow-hidden" aria-live="polite"></ul>
-<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<%- include('../layouts/' + _portal + '-layout', { part: 'bottom' }) %>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const { api, html, raw, fmt, stateBlock, errorBlock, toast } = Doctory;

@@ -20,7 +20,7 @@
     <span class="sm:hidden font-title-md text-title-md text-on-surface truncate"><%= typeof pageTitle !== 'undefined' ? pageTitle : '' %></span>
   </div>
   <div class="flex items-center gap-2.5">
-    <%- include('notification-bell') %>
+    <%- include('notification-bell', { href: '/patient/notifications' }) %>
     <div class="h-8 w-px bg-surface-variant mx-1 hidden sm:block"></div>
     <a href="/user/settings" class="flex items-center gap-3 p-1.5 pr-2 rounded-xl hover:bg-surface-container-low transition-colors">
       <span class="text-right hidden sm:flex flex-col leading-tight">

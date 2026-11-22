@@ -1,0 +1,24 @@
+<%# GET /admin/patients — API: GET /api/admin/patients %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'patients', pageTitle: 'المرضى' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">المرضى</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">قائمة المرضى المسجّلين.</p></div></header>
+<div id="list"></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, fmt } = Doctory;
+  Kit.list({ root: '#list', endpoint: '/api/admin/patients', limit: 10,
+    tabs: { param: 'status', items: [['', 'الكل'], ['active', 'نشط'], ['suspended', 'موقوف']] },
+    filters: [{ name: 'q', type: 'search', placeholder: 'ابحث بالاسم أو البريد أو الهاتف' }, { name: 'address', type: 'select', label: 'المحافظة', options: [['', 'كل المحافظات'], ['القاهرة', 'القاهرة'], ['الجيزة', 'الجيزة'], ['الإسكندرية', 'الإسكندرية']] }],
+    rowHref: (r) => '/admin/patients/' + r.user_id,
+    columns: [
+      { label: 'المريض', cell: (r) => raw(html`<div class="flex items-center gap-3">${Kit.avatar(r.name)}<div><p class="font-bold">${r.name}</p><p class="font-label-sm text-on-surface-variant" dir="ltr">${r.email}</p></div></div>`) },
+      { label: 'الهاتف', cls: 'num', cell: (r) => raw(html`<span dir="ltr">${r.phone}</span>`) },
+      { label: 'السن', cls: 'num', cell: (r) => r.age },
+      { label: 'المحافظة', cell: (r) => r.address },
+      { label: 'الحالة', cell: (r) => Kit.badge(r.status === 'active' ? 'نشط' : 'موقوف', r.status === 'active' ? 'success' : 'danger') },
+      { label: 'آخر دخول', cell: (r) => fmt.relative(r.last_login) }
+    ], empty: { icon: 'personal_injury', title: 'لا يوجد مرضى', text: 'جرّب تغيير البحث.' } });
+});
+</script>
+</body>
+</html>

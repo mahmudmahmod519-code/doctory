@@ -1,1 +1,32 @@
-<!-- TODO: implement doctor verification list view -->
+<%#
+  VIEW: admin/doctors/verification-list   ROUTE: GET /admin/doctors/verification  — controller: getDoctorVerificationListRender
+  (must be registered BEFORE /doctors/:id so 'verification' is not read as an id)
+  Backend contract:
+    GET   /api/admin/doctors/pending?page=&limit=   -> { items:[{ portfolio_id, name, specialty, email, status }], page, limit, total }
+    PATCH /api/admin/doctors/:id/approve            sets verification=approved + users.status=active, emails the doctor; 409 if not pending
+    PATCH /api/admin/doctors/:id/reject             body { reason (min 10 chars) }; account stays active; 409 if not pending
+%>
+<%- include('../../layouts/admin-layout', { part: 'top', active: 'doctors', pageTitle: 'طلبات التوثيق' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">طلبات توثيق الأطباء</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">راجع بطاقة النقابة ثم اعتمد أو ارفض.</p></div><a href="/admin/doctors" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>الأطباء</a></header>
+<div id="list"></div>
+<%- include('../../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, api } = Doctory;
+  Kit.list({ root: '#list', endpoint: '/api/admin/doctors/pending', limit: 10, id: 'portfolio_id',
+    rowHref: (r) => '/admin/doctors/verification/' + r.portfolio_id,
+    columns: [
+      { label: 'الطبيب', cell: (r) => raw(html`<div class="flex items-center gap-3">${Kit.avatar(r.name)}<div><p class="font-bold">${r.name}</p><p class="font-label-sm text-on-surface-variant" dir="ltr">${r.email}</p></div></div>`) },
+      { label: 'التخصص', cell: (r) => r.specialty },
+      { label: 'الحالة', cell: () => Kit.badge('بانتظار المراجعة', 'warning') },
+      { label: '', cls: 'text-left whitespace-nowrap', cell: (r) => raw(html`<button data-act="approve" data-id="${r.portfolio_id}" class="h-9 px-3 rounded-lg bg-primary-container text-on-primary font-label-md">توثيق</button> <button data-act="reject" data-id="${r.portfolio_id}" class="h-9 px-3 rounded-lg text-error hover:bg-error-container/50 font-label-md">رفض</button>`) }
+    ],
+    empty: { icon: 'verified_user', title: 'لا توجد طلبات توثيق', text: 'كل الأطباء تمت مراجعتهم.' },
+    actions: async (act, id, btn, reload) => {
+      if (act === 'approve') { const r = await Doctory.confirm({ title: 'توثيق الطبيب', message: 'سيتمكن الطبيب من استقبال الحجوزات وسيصله بريد.', confirmText: 'توثيق' }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/doctors/${id}/approve`))) reload(); }
+      if (act === 'reject') { const r = await Doctory.confirm({ title: 'رفض التوثيق', message: 'سيصل الطبيب السبب ليعيد المحاولة.', confirmText: 'رفض', danger: true, withReason: true, reasonRequired: true, reasonMin: 10 }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/doctors/${id}/reject`, { reason: r.reason }))) reload(); }
+    } });
+});
+</script>
+</body>
+</html>

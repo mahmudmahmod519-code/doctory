@@ -1,0 +1,39 @@
+<%# GET /admin/users/:id — APIs: GET/PATCH/DELETE /api/admin/users/:id, PATCH role|status|restore, POST force-logout|reset-password|reset-2fa %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'users', pageTitle: 'تفاصيل المستخدم' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">تفاصيل المستخدم</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">بيانات الحساب وإجراءات الإدارة.</p></div><a href="/admin/users" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>المستخدمون</a></header>
+<div id="root"><div class="skeleton h-64 rounded-2xl"></div></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory; const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').pop(); const root = document.getElementById('root');
+  const TONE = { active: 'success', pending: 'warning', suspended: 'danger', deleted: 'neutral' }, LBL = { active: 'نشط', pending: 'معلّق', suspended: 'موقوف', deleted: 'محذوف' };
+  const A = (key, icon, label, cls = '') => '<button data-a="' + key + '" class="h-11 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center gap-2 ' + cls + '"><span class="material-symbols-outlined text-[18px]">' + icon + '</span>' + label + '</button>';
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/admin/users/' + id); const u = d.user;
+      render(root, html`<div class="grid lg:grid-cols-3 gap-6"><section class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><div class="flex items-center gap-4 mb-5">${Kit.avatar(u.name)}<div class="flex-1"><h2 class="font-title-lg font-bold">${u.name}</h2><div class="flex gap-2 mt-1">${Kit.roleBadge(u.role)}${Kit.badge(LBL[u.status] || u.status, TONE[u.status])}</div></div></div>
+        <dl class="grid sm:grid-cols-2 gap-4"><div><dt class="font-label-sm text-on-surface-variant">البريد</dt><dd dir="ltr" class="text-right">${u.email} ${u.email_verified ? '✓' : '(غير مؤكد)'}</dd></div><div><dt class="font-label-sm text-on-surface-variant">الهاتف</dt><dd class="num" dir="ltr">${u.phone || '—'}</dd></div><div><dt class="font-label-sm text-on-surface-variant">التحقق بخطوتين</dt><dd>${u.enable_2fa ? 'مفعّل' : 'غير مفعّل'}</dd></div><div><dt class="font-label-sm text-on-surface-variant">آخر دخول</dt><dd>${fmt.relative(u.last_login)}</dd></div><div><dt class="font-label-sm text-on-surface-variant">تاريخ الإنشاء</dt><dd>${fmt.shortDate(u.created_at)}</dd></div></dl></section>
+        <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-2" data-animate="fade-up"><h3 class="font-title-md font-bold mb-1">إجراءات</h3>${raw(A('edit', 'edit', 'تعديل البيانات') + A('role', 'admin_panel_settings', 'تغيير الدور') + (u.status === 'suspended' ? A('activate', 'play_circle', 'تفعيل الحساب') : A('suspend', 'pause_circle', 'إيقاف الحساب')) + A('logout', 'logout', 'إنهاء كل الجلسات') + A('pwd', 'lock_reset', 'إرسال إعادة تعيين كلمة المرور') + (u.enable_2fa ? A('2fa', 'phonelink_erase', 'تصفير التحقق بخطوتين') : '') + (u.status === 'deleted' ? A('restore', 'restore', 'استعادة الحساب') : A('delete', 'delete', 'حذف الحساب', 'text-error')))}</section></div>`);
+      window.__u = u;
+    } catch (e) { root.innerHTML = errorBlock(e.status === 404 ? Object.assign(e, { message: 'المستخدم غير موجود' }) : e, 'load'); }
+  }
+  window.load = load;
+  const call = async (fn) => { if (await Kit.act(fn)) load(); };
+  const ask = async (title, message, confirmText, danger) => (await Doctory.confirm({ title, message, confirmText, danger })).ok;
+  root.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-a]'); if (!b) return; const u = window.__u, k = b.dataset.a;
+    if (k === 'edit') { const v = await Kit.dialog({ title: 'تعديل البيانات', fields: [{ name: 'name', label: 'الاسم', value: u.name, required: true, minLength: 3 }, { name: 'phone', label: 'الهاتف', value: u.phone || '' }], submitText: 'حفظ' }); if (v) call(() => api('PATCH', '/api/admin/users/' + id, v)); }
+    if (k === 'role') { const v = await Kit.dialog({ title: 'تغيير الدور', text: 'ستنتهي جلسات المستخدم الحالية.', fields: [{ name: 'role', label: 'الدور الجديد', type: 'select', value: u.role, options: [['patient', 'مريض'], ['doctor', 'طبيب'], ['admin', 'مدير']] }], submitText: 'تغيير' }); if (v) call(() => api('PATCH', '/api/admin/users/' + id + '/role', v)); }
+    if (k === 'suspend' && await ask('إيقاف الحساب', 'لن يتمكن المستخدم من الدخول.', 'إيقاف', true)) call(() => api('PATCH', '/api/admin/users/' + id + '/status', { status: 'suspended' }));
+    if (k === 'activate') call(() => api('PATCH', '/api/admin/users/' + id + '/status', { status: 'active' }));
+    if (k === 'logout' && await ask('إنهاء الجلسات', 'سيُطلب من المستخدم تسجيل الدخول من جديد.', 'إنهاء')) call(() => api('POST', '/api/admin/users/' + id + '/force-logout'));
+    if (k === 'pwd' && await ask('إعادة تعيين كلمة المرور', 'سيصل المستخدم رابط على بريده.', 'إرسال')) call(() => api('POST', '/api/admin/users/' + id + '/reset-password'));
+    if (k === '2fa' && await ask('تصفير التحقق بخطوتين', 'سيُطلب منه إعادة التفعيل عند الدخول القادم.', 'تصفير', true)) call(() => api('POST', '/api/admin/users/' + id + '/reset-2fa'));
+    if (k === 'restore') call(() => api('PATCH', '/api/admin/users/' + id + '/restore'));
+    if (k === 'delete' && await ask('حذف الحساب', 'يمكن استعادته لاحقاً من الإدارة.', 'حذف', true)) call(() => api('DELETE', '/api/admin/users/' + id));
+  });
+  load();
+});
+</script>
+</body>
+</html>

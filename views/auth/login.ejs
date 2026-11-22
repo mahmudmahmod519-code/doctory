@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (role === 'clinician' && window.DoctoryMotion) window.DoctoryMotion.animate(notice, { opacity: [0, 1], y: [-6, 0] }, { duration: 0.25 });
   }
   tabs.forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.roleTab)));
-  selectTab('patient');
+  selectTab(new URLSearchParams(location.search).get('role') === 'clinician' ? 'clinician' : 'patient');
 
   function showAlert(msg) {
     alertBox.querySelector('[data-msg]').textContent = msg;

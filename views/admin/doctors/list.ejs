@@ -1,1 +1,31 @@
-<!-- TODO: implement doctors list view -->
+<%#
+  VIEW: admin/doctors/list       ROUTE: GET /admin/doctors  — controller: getDoctorsRender
+  Backend contract:
+    GET /api/admin/doctors?q=&status=active|suspended&specialty=&page=&limit=
+        -> { items:[{ portfolio_id, name, specialty, email, status, sessions_count, patients_count }], page, limit, total }
+  Pending verification requests live in their own pages: /admin/doctors/verification (list) and /admin/doctors/verification/:id (details).
+%>
+<%- include('../../layouts/admin-layout', { part: 'top', active: 'doctors', pageTitle: 'الأطباء' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الأطباء</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">إدارة الأطباء المعتمدين.</p></div><a href="/admin/doctors/verification" class="h-12 px-6 rounded-lg bg-secondary-container/40 text-on-secondary-container font-title-md inline-flex items-center gap-2"><span class="material-symbols-outlined">verified_user</span>طلبات التوثيق</a></header>
+<div id="list"></div>
+<%- include('../../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, api } = Doctory; const SPEC = ['قلب وأوعية دموية', 'أسنان', 'جلدية وتجميل', 'أطفال', 'عيون', 'باطنة'];
+  const TONE = { active: 'success', pending: 'warning', suspended: 'danger' }, LBL = { active: 'نشط', pending: 'قيد التوثيق', suspended: 'موقوف' };
+  Kit.list({ root: '#list', endpoint: '/api/admin/doctors', limit: 10, id: 'doctor_id',
+    tabs: { param: 'status', items: [['', 'الكل'], ['active', 'نشط'], ['suspended', 'موقوف']], initial: ''},
+    filters: [{ name: 'q', type: 'search', placeholder: 'ابحث بالاسم أو البريد' }, { name: 'specialty', type: 'select', label: 'التخصص', options: [['', 'كل التخصصات'], ...SPEC.map((s) => [s, s])] }],
+    rowHref: (r) => r.status === 'pending' ? '/admin/doctors/verification/' + r.portfolio_id : '/admin/doctors/' + r.portfolio_id,
+    columns: [
+      { label: 'الطبيب', cell: (r) => raw(html`<div class="flex items-center gap-3">${Kit.avatar(r.name)}<div><p class="font-bold">${r.name}</p><p class="font-label-sm text-on-surface-variant" dir="ltr">${r.email}</p></div></div>`) },
+      { label: 'التخصص', cell: (r) => r.specialty },
+      { label: 'الحالة', cell: (r) => Kit.badge(LBL[r.status] || r.status, TONE[r.status]) },
+      { label: 'الجلسات', cls: 'num', cell: (r) => r.sessions_count ?? '—' },
+    ],
+    empty: { icon: 'stethoscope', title: 'لا يوجد أطباء مطابقون', text: 'جرّب تغيير البحث أو الفلاتر.' },
+  });
+});
+</script>
+</body>
+</html>

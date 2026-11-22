@@ -157,11 +157,6 @@ describe('admin API', () => {
     test.todo('returns 401 without a session and 403 for a wrong role');
     test.todo('returns 400 / 404 / 409 according to the documented rules');
   });
-  describe('GET /api/admin/audit-logs', () => {
-    test.todo('succeeds for an allowed role');
-    test.todo('returns 401 without a session and 403 for a wrong role');
-    test.todo('returns 400 / 404 / 409 according to the documented rules');
-  });
   describe('GET /api/admin/deletion-requests', () => {
     test.todo('succeeds for an allowed role');
     test.todo('returns 401 without a session and 403 for a wrong role');

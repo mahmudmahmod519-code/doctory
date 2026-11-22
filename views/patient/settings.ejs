@@ -1,5 +1,6 @@
 <%# GET /user/settings (and /patient/settings) — APIs: PATCH /api/user/profile, POST /api/user/upload-image, POST /api/user/2fa/enable|disable, DELETE /api/user/account %>
-<%- include('../layouts/patient-layout', { part: 'top', active: 'settings', pageTitle: 'الإعدادات' }) %>
+<% const _r = (typeof portal !== 'undefined' && portal) || (typeof currentUser !== 'undefined' && currentUser && currentUser.role) || (typeof user !== 'undefined' && user && user.role) || 'patient'; const _portal = ['doctor','admin'].includes(_r) ? _r : 'patient'; %>
+<%- include('../layouts/' + _portal + '-layout', { part: 'top', active: 'settings', pageTitle: 'الإعدادات' }) %>
 <% const u = (typeof user !== 'undefined' && user) || (typeof currentUser !== 'undefined' && currentUser) || {}; %>
 <header data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الإعدادات</h1></header>
 <div class="grid lg:grid-cols-3 gap-6">
@@ -25,7 +26,7 @@
     </section>
   </div>
 </div>
-<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<%- include('../layouts/' + _portal + '-layout', { part: 'bottom' }) %>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const { api, toast, setBusy, formToObject, showFieldErrors } = Doctory;

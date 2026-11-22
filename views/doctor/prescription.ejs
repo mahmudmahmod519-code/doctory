@@ -1,0 +1,33 @@
+<%# GET /doctor/visits/:id/prescription — APIs: GET|POST /api/doctor/visits/:visitId/prescriptions { medicines[], notes } %>
+<%- include('../layouts/doctor-layout', { part: 'top', active: 'waiting', pageTitle: 'الروشتة' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الروشتة</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">أضف الأدوية وتعليمات المريض ثم احفظ أو اطبع.</p></div><div class="flex gap-2 print:hidden"><a id="back" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>الملخص</a><button id="print" type="button" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">print</span>طباعة</button></div></header>
+<form id="f" class="max-w-4xl bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-5" novalidate data-animate="fade-up">
+  <div id="meds" class="flex flex-col gap-3"></div>
+  <p data-error-for="medicines" class="hidden font-label-sm text-error"></p>
+  <button type="button" id="add" class="w-fit h-11 px-5 rounded-lg bg-secondary-container/40 text-on-secondary-container font-label-md text-label-md inline-flex items-center gap-2 print:hidden"><span class="material-symbols-outlined text-[18px]">add</span>إضافة دواء</button>
+  <div class="flex flex-col gap-1.5"><label for="notes" class="font-label-md font-semibold">تعليمات عامة للمريض</label><textarea id="notes" name="notes" rows="3" maxlength="2000" class="field"></textarea></div>
+  <div class="print:hidden"><button id="save" class="h-12 px-8 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md">حفظ وإرسال للمريض</button></div>
+</form>
+<%- include('../layouts/doctor-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, html, setBusy, showFieldErrors } = Doctory;
+  const id = '<%= typeof id !== "undefined" ? id : "" %>' || location.pathname.split('/').filter(Boolean).slice(-2, -1)[0];
+  document.getElementById('back').href = '/doctor/visits/' + id + '/clinical-summary'; document.getElementById('print').onclick = () => window.print();
+  const meds = document.getElementById('meds'), f = document.getElementById('f');
+  const row = (m = {}) => { const d = document.createElement('div'); d.className = 'grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 p-3 rounded-xl bg-surface-container-low items-start';
+    d.innerHTML = html`<input data-k="name" class="field" placeholder="اسم الدواء *" dir="ltr" value="${m.name || ''}" aria-label="اسم الدواء" /><input data-k="dosage" class="field" placeholder="الجرعة *" value="${m.dosage || ''}" aria-label="الجرعة" /><input data-k="frequency" class="field" placeholder="التكرار" value="${m.frequency || ''}" aria-label="التكرار" /><input data-k="duration" class="field" placeholder="المدة" value="${m.duration || ''}" aria-label="المدة" /><button type="button" data-rm class="w-12 h-12 rounded-lg text-error hover:bg-error-container/50 print:hidden" aria-label="حذف الدواء"><span class="material-symbols-outlined">delete</span></button><input data-k="instructions" class="field sm:col-span-5" placeholder="تعليمات (اختياري)" value="${m.instructions || ''}" aria-label="تعليمات" />`; meds.appendChild(d); };
+  document.getElementById('add').onclick = () => { if (meds.children.length < 50) row(); };
+  meds.addEventListener('click', (e) => { if (e.target.closest('[data-rm]') && meds.children.length > 1) e.target.closest('div.grid').remove(); });
+  try { const { data } = await api('GET', '/api/doctor/visits/' + id + '/prescriptions'); const p = data.prescriptions[0]; if (p) { p.medicines.forEach(row); f.notes.value = p.notes || ''; } } catch (_) {}
+  if (!meds.children.length) row();
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault(); const medicines = [...meds.children].map((d) => Object.fromEntries([...d.querySelectorAll('[data-k]')].map((i) => [i.dataset.k, i.value.trim()]))).filter((m) => m.name || m.dosage);
+    if (!medicines.length || medicines.some((m) => !m.name || !m.dosage)) return showFieldErrors(f, { medicines: 'اسم الدواء والجرعة مطلوبان لكل دواء' }); showFieldErrors(f, {});
+    const btn = document.getElementById('save'); setBusy(btn, true, 'جارٍ الحفظ...');
+    try { await api('POST', '/api/doctor/visits/' + id + '/prescriptions', { medicines, notes: f.notes.value.trim() }); Doctory.toast('تم حفظ الروشتة وإشعار المريض', 'success'); } catch (err) { Doctory.toast(err.message, 'error'); } finally { setBusy(btn, false); }
+  });
+});
+</script>
+</body>
+</html>

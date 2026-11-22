@@ -1,1 +1,21 @@
-<!-- TODO: implement deletion requests view -->
+<%# GET /admin/deletion-requests — APIs: GET /api/admin/deletion-requests, PATCH /api/admin/deletion-requests/:id { decision: approved|rejected, reason } %>
+<%- include('../layouts/admin-layout', { part: 'top', active: 'deletion', pageTitle: 'طلبات الحذف' }) %>
+<header data-animate="fade-up" class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">طلبات حذف البيانات</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">الموافقة تنفّذ حذفاً نهائياً لا رجعة فيه.</p></div></header>
+<div id="list"></div>
+<%- include('../layouts/admin-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { html, raw, fmt, api } = Doctory; const TONE = { pending: 'warning', approved: 'success', rejected: 'danger' }, LBL = { pending: 'قيد المراجعة', approved: 'تم التنفيذ', rejected: 'مرفوض' };
+  Kit.list({ root: '#list', endpoint: '/api/admin/deletion-requests', limit: 10, id: 'request_id',
+    tabs: { param: 'status', items: [['pending', 'قيد المراجعة'], ['approved', 'منفّذة'], ['rejected', 'مرفوضة'], ['', 'الكل']], initial: 'pending' },
+    columns: [{ label: 'المريض', cell: (r) => raw(html`<span class="font-bold" dir="ltr">${r.patient_masked}</span>`) }, { label: 'تاريخ الطلب', cell: (r) => fmt.shortDate(r.requested_at) }, { label: 'الحالة', cell: (r) => Kit.badge(LBL[r.status] || r.status, TONE[r.status]) },
+      { label: '', cls: 'text-left whitespace-nowrap', cell: (r) => r.status === 'pending' ? raw(html`<button data-act="ok" data-id="${r.request_id}" class="h-9 px-3 rounded-lg bg-error text-on-error font-label-md">حذف نهائي</button> <button data-act="no" data-id="${r.request_id}" class="h-9 px-3 rounded-lg bg-surface-container-low font-label-md">رفض</button>`) : '' }],
+    empty: { icon: 'verified_user', title: 'لا توجد طلبات', text: 'لا شيء بانتظار قرارك.' },
+    actions: async (act, id, btn, reload) => {
+      if (act === 'ok') { const r = await Doctory.confirm({ title: 'تنفيذ الحذف النهائي', message: 'سيتم حذف بيانات المريض نهائياً ولا يمكن التراجع.', confirmText: 'حذف نهائي', danger: true }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/deletion-requests/${id}`, { decision: 'approved' }))) reload(); }
+      if (act === 'no') { const r = await Doctory.confirm({ title: 'رفض الطلب', message: 'اذكر السبب للمريض.', confirmText: 'رفض', danger: true, withReason: true, reasonRequired: true, reasonMin: 10 }); if (r.ok && await Kit.act(() => api('PATCH', `/api/admin/deletion-requests/${id}`, { decision: 'rejected', reason: r.reason }))) reload(); }
+    } });
+});
+</script>
+</body>
+</html>
