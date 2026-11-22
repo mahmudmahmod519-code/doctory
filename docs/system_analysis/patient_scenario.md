@@ -49,10 +49,9 @@ Complete the medical consultation successfully.
 7. The system records the second decline attempt.
 8. The system cancels the patient's active queue entry.
 9. The cancellation reason is recorded.
-10. The action is recorded in the audit log.
-11. The patient receives a cancellation notification.
-12. The system moves to the next eligible patient in the queue.
-13. The next patient is notified.
+10. The patient receives a cancellation notification.
+11. The system moves to the next eligible patient in the queue.
+12. The next patient is notified.
 
 ## Postconditions
 

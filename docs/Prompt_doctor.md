@@ -28,7 +28,7 @@ Design a clean, professional, responsive Doctor Dashboard UI for a graduation pr
 
 ## Permissions and Safety
 - This is a Doctor-only interface.
-- Do not show Admin-only controls such as approving other doctors or viewing the system-wide Audit Log.
+- Do not show Admin-only controls such as approving other doctors.
 - Do not expose the patient's full account data; show only authorized information.
 - AI outputs are suggestions only, never final diagnoses or autonomous prescriptions.
 - Do not invent medical capabilities that are not in the requirements.

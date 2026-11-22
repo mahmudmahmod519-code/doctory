@@ -192,7 +192,6 @@ doctory/
 │   ├── BookingItem/               ⬜ Empty — BookingItem.controller.js, BookingItem.render.js
 │   ├── Review/                    ⬜ Empty — Review.controller.js, Review.render.js
 │   ├── Report/                    ⬜ Empty — Report.controller.js, Report.render.js
-│   ├── AuditLog/                  ⬜ Empty — AuditLog.controller.js, AuditLog.render.js
 │   ├── DeletionRequest/           ⬜ Empty — DeletionRequest.controller.js, .render.js
 │   ├── RefreshToken/              ⬜ Empty — RefreshToken.controller.js, .render.js
 │   ├── DoctorPortfolio/           ⬜ Empty — DoctorPortfolio.controller.js, .render.js
@@ -216,7 +215,6 @@ doctory/
 │   ├── BookingItem/               ⬜ Empty
 │   ├── Review/                    ⬜ Empty
 │   ├── Report/                    ⬜ Empty
-│   ├── AuditLog/                  ⬜ Empty
 │   ├── DeletionRequest/           ⬜ Empty
 │   ├── RefreshToken/              ⬜ Empty
 │   ├── DoctorPortfolio/           ⬜ Empty
@@ -235,7 +233,6 @@ doctory/
 │   ├── BookingItem.entity.js
 │   ├── Review.entity.js
 │   ├── Report.entity.js
-│   ├── AuditLog.entity.js
 │   ├── DeletionRequest.entity.js
 │   ├── RefreshToken.entity.js
 │   └── Notification.entity.js
@@ -391,7 +388,7 @@ Copy `.env.example` to `.env` and adjust. `.env` is gitignored and must never be
 
 ## 📄 Pages
 
-**54 pages total.** None of the EJS templates exist yet — every page below is **planned**. The status column reflects whether the server-side render function exists in the codebase.
+**53 pages total.** None of the EJS templates exist yet — every page below is **planned**. The status column reflects whether the server-side render function exists in the codebase.
 
 ### 🏠 Public Pages
 
@@ -463,9 +460,8 @@ Copy `.env.example` to `.env` and adjust. `.env` is gitignored and must never be
 | 49 | Booking Details | `/admin/bookings/:id` | admin | Session and its patients | 📋 Planned |
 | 50 | Waiting List | `/admin/waiting-list` | admin | Doctor daily queue — waiting / completed / removed | 📋 Planned |
 | 51 | Doctor Services | `/admin/services` | admin | Approve or reject doctor services | 📋 Planned |
-| 52 | Audit Log | `/admin/audit-log` | admin | Read-only operation log | 📋 Planned |
-| 53 | Deletion Requests | `/admin/deletion-requests` | admin | Handle data-deletion requests (Law 151/2020) | 📋 Planned |
-| 54 | Error Pages | `/403`, `/404`, `/500` | all | Clear message with a return button | 📋 Renderers exist, templates missing |
+| 52 | Deletion Requests | `/admin/deletion-requests` | admin | Handle data-deletion requests (Law 151/2020) | 📋 Planned |
+| 53 | Error Pages | `/403`, `/404`, `/500` | all | Clear message with a return button | 📋 Renderers exist, templates missing |
 
 ---
 
@@ -543,9 +539,8 @@ The table below maps every page to the backend API endpoints it consumes. Endpoi
 | 49 | Booking Details | `/admin/bookings/:id` | GET /api/admin/bookings/:id (planned) |
 | 50 | Waiting List | `/admin/waiting-list` | GET /api/admin/waiting-list (planned) |
 | 51 | Doctor Services | `/admin/services` | GET /api/admin/services (planned) |
-| 52 | Audit Log | `/admin/audit-log` | GET /api/admin/audit-logs (planned) |
-| 53 | Deletion Requests | `/admin/deletion-requests` | GET /api/admin/deletion-requests (planned) |
-| 54 | Error Pages | `/403`, `/404`, `/500` | None (static error pages) |
+| 52 | Deletion Requests | `/admin/deletion-requests` | GET /api/admin/deletion-requests (planned) |
+| 53 | Error Pages | `/403`, `/404`, `/500` | None (static error pages) |
 
 ### 🔗 API-to-Page Reverse Index
 
@@ -570,7 +565,6 @@ The table below maps every page to the backend API endpoints it consumes. Endpoi
 | `GET /api/admin/bookings/:id` | Booking Details |
 | `GET /api/admin/waiting-list` | Waiting List |
 | `GET /api/admin/services` | Book Appointment, Doctor Services |
-| `GET /api/admin/audit-logs` | Audit Log |
 | `GET /api/admin/deletion-requests` | Deletion Requests |
 | `GET /api/notifications` | Notifications Center |
 | `GET /api/doctor/dashboard` | Doctor Dashboard |
@@ -664,8 +658,8 @@ REDIRECTS: [where users are redirected after actions]
 | GET | `/api/admin/stats` | admin | Dashboard statistics |
 | GET | `/api/admin/doctors/pending` | admin | Doctors pending verification |
 | GET | `/api/admin/doctors/:id/verification` | admin | Verification details |
-| PATCH | `/api/admin/doctors/:id/approve` | admin | Approve a doctor (email + audit log) |
-| PATCH | `/api/admin/doctors/:id/reject` | admin | Reject a doctor (reason required, email + audit log) |
+| PATCH | `/api/admin/doctors/:id/approve` | admin | Approve a doctor (email) |
+| PATCH | `/api/admin/doctors/:id/reject` | admin | Reject a doctor (reason required, email) |
 | GET | `/api/admin/doctors` | admin | All doctors |
 | GET | `/api/admin/doctors/:id` | admin | Doctor profile |
 | GET | `/api/admin/doctors/:id/patients` | admin | A doctor's patients |
@@ -689,7 +683,6 @@ REDIRECTS: [where users are redirected after actions]
 | GET | `/api/admin/waiting-list` | admin | Waiting list for a doctor on a date |
 | GET | `/api/admin/services` | admin | Doctor services |
 | PATCH | `/api/admin/services/:id/status` | admin | Approve or reject a service |
-| GET | `/api/admin/audit-logs` | admin | Read audit log entries |
 | GET | `/api/admin/deletion-requests` | admin | Data-deletion requests |
 | PATCH | `/api/admin/deletion-requests/:id` | admin | Approve or reject a deletion request |
 
@@ -712,7 +705,6 @@ REDIRECTS: [where users are redirected after actions]
 ### API Rules
 
 - Every `/api/admin/*` endpoint requires a valid JWT cookie and the `admin` role — `401` when unauthenticated, `403` when the role is wrong
-- Every write action creates an `audit_logs` entry
 - Users, doctors, and services are addressed by their external UUID (`user_id`, `portfolio_id`, `work_id`); bookings and booking items use the Mongo `ObjectId`
 - List endpoints accept `page`, `limit`, `sort`, and `order`, and return `{ items, page, limit, total }`
 - Soft-deleted records are hidden unless `include_deleted=true` is passed
@@ -762,7 +754,7 @@ description by arabic: [description in Arabic]
 
 **Case C — Patient declines (second time)**
 - The second decline is recorded and the active queue entry is cancelled
-- The cancellation reason is stored, the action is written to the audit log
+- The cancellation reason is stored
 - The patient receives an in-app notification and a cancellation email
 - The system moves to the next eligible patient and notifies them
 
@@ -773,7 +765,7 @@ description by arabic: [description in Arabic]
 3. Admin decides:
    - **Approve** → status `APPROVED`, the doctor gains access to protected features, an email is sent
    - **Reject** → status `REJECTED` with a mandatory reason (minimum 10 characters); the account stays alive and the doctor can resubmit a new Medical ID, returning the request to `PENDING`
-4. Every decision is written to the audit log and the doctor is notified in-app and by email
+4. Every decision is recorded and the doctor is notified in-app and by email
 
 ### Scenario 3 — Admin User Management
 
@@ -802,7 +794,7 @@ description by arabic: [description in Arabic]
 3. Admin decides:
    - **Approve** → the data is permanently deleted or anonymized and the patient is notified — the only exception to the soft-delete rule
    - **Reject** → a reason is given and the patient is notified
-4. The decision is written to the audit log without sensitive patient data
+4. The decision is applied without exposing sensitive patient data
 
 ---
 
@@ -812,7 +804,7 @@ description by arabic: [description in Arabic]
 
 Eleven collections are defined in `models/*.entity.js`. Every schema uses `timestamps: true` and declares explicit indexes.
 
-> **Naming note:** Mongoose derives collection names from the model name and lowercases them, so the physical collections are `users`, `doctorportfolios`, `doctorworks`, `bookings`, `bookingitems`, `reviews`, `reports`, `auditlogs`, `deletionrequests`, `refreshtokens`, and `notifications`.
+> **Naming note:** Mongoose derives collection names from the model name and lowercases them, so the physical collections are `users`, `doctorportfolios`, `doctorworks`, `bookings`, `bookingitems`, `reviews`, `reports`, `deletionrequests`, `refreshtokens`, and `notifications`.
 
 ### ERD
 
@@ -825,8 +817,7 @@ users (1) ───< (N) doctorportfolios (1) ───< (N) doctorworks
    ├──< (N) reports
    ├──< (N) notifications
    ├──< (N) refreshtokens
-   ├──< (N) deletionrequests
-   └──< (N) auditlogs
+   └──< (N) deletionrequests
 ```
 
 ---
@@ -837,7 +828,7 @@ users (1) ───< (N) doctorportfolios (1) ───< (N) doctorworks
 |------|-------------|
 | **Patient** | Register and use the account immediately, browse doctors, book appointments, confirm or decline queue turns, view medical history and reports, submit a review after a completed visit, manage their own settings, request data deletion |
 | **Doctor** | View the dashboard, review pending bookings (accept or reject), view the waiting list, read authorized clinical information, write and modify diagnoses, create prescriptions, manage their own portfolio and services, see their verification status. **Cannot** access a patient's full account data. Requires admin verification of the Egyptian Medical Syndicate ID before protected features are unlocked. |
-| **Admin** | Verify and approve or reject doctors, manage all users and their roles, review and moderate doctor services, view statistics, read the audit log, decide data-deletion requests |
+| **Admin** | Verify and approve or reject doctors, manage all users and their roles, review and moderate doctor services, view statistics, decide data-deletion requests |
 
 ---
 
@@ -868,7 +859,7 @@ users (1) ───< (N) doctorportfolios (1) ───< (N) doctorworks
 | 8 | **Suspicious Request Logging** | ✅ Enabled | `middleware/securityLogger.js` detects path traversal, SQL injection, XSS, and code-injection patterns and writes them to `logs/suspicious.log` |
 | 9 | **Rate Limiting** | 📋 Planned | On `/api/auth/*` — window and max-request settings already exist in `env-config.js` |
 | 10 | **Password Hashing** | ✅ Ready | bcrypt with a configurable cost factor (`SALT_ROUNDS`, default 12) |
-| 11 | **Soft Delete + Audit Log** | ✅ Data layer ready | `deleted_at` / `deleted_by` on users, bookings, booking items, and doctor works; every sensitive write lands in `auditlogs` |
+| 11 | **Soft Delete** | ✅ Data layer ready | `deleted_at` / `deleted_by` on users, bookings, booking items, and doctor works |
 | 12 | **Data Deletion Requests** | 📋 Planned | A formal workflow for Egyptian Personal Data Protection Law No. 151 (2020) |
 | 13 | **No SMS** | ✅ Policy | No SMS and no paid SMS gateway anywhere in the project — see Notifications Policy |
 | 14 | **AI Safety** | ✅ Policy | AI output is always a suggestion; the physician keeps final authority |
@@ -1084,7 +1075,7 @@ Thresholds and policy must not be embedded in route code.
 
 - [x] Node.js + Express 5 project initialized
 - [x] Folder structure for `config/`, `logicModels/`, `routes/`, `models/`, `middleware/`, `services/`, `utils/`, `views/`, `public/`, `scripts/`, `docs/`
-- [x] Module folder pattern applied to all 15 modules (`auth`, `patient`, `doctor`, `admin`, `Notification`, `User`, `Booking`, `BookingItem`, `Review`, `Report`, `AuditLog`, `DeletionRequest`, `RefreshToken`, `DoctorPortfolio`, `DoctorWork`)
+- [x] Module folder pattern applied to all 14 modules (`auth`, `patient`, `doctor`, `admin`, `Notification`, `User`, `Booking`, `BookingItem`, `Review`, `Report`, `DeletionRequest`, `RefreshToken`, `DoctorPortfolio`, `DoctorWork`)
 - [x] `config/database.js` — Mongoose connection with retry, timeouts, and connection events
 - [x] `config/env-config.js` — centralized configuration from `process.env`
 - [x] `config/server-config.js` — body parsers, cookie parser, static files, EJS engine, helmet, security logger
@@ -1107,7 +1098,6 @@ Thresholds and policy must not be embedded in route code.
 - [x] `BookingItem.entity.js`
 - [x] `Review.entity.js`
 - [x] `Report.entity.js`
-- [x] `AuditLog.entity.js`
 - [x] `DeletionRequest.entity.js`
 - [x] `RefreshToken.entity.js` — with a TTL index on `expires_at`
 - [x] `Notification.entity.js` — new, with the full type enum and the notification policy documented
@@ -1141,7 +1131,7 @@ Thresholds and policy must not be embedded in route code.
 - [ ] `routes/admin/` — index.js, admin.apis.js, admin.render.js *(documented in index.js comments)*
 - [ ] `routes/Notification/` — index.js, Notification.apis.js, Notification.render.js *(documented in index.js comments)*
 - [ ] `routes/User/`, `routes/Booking/`, `routes/BookingItem/`, `routes/Review/`, `routes/Report/`
-- [ ] `routes/AuditLog/`, `routes/DeletionRequest/`, `routes/RefreshToken/`
+- [ ] `routes/DeletionRequest/`, `routes/RefreshToken/`
 - [ ] `routes/DoctorPortfolio/`, `routes/DoctorWork/`
 
 
@@ -1153,9 +1143,8 @@ Thresholds and policy must not be embedded in route code.
 - [ ] `logicModels/admin/` — admin.controller.js, admin.render.js
 - [ ] `logicModels/Notification/` — Notification.controller.js, Notification.render.js
 - [ ] `logicModels/User/`, `Booking/`, `BookingItem/`, `Review/`, `Report/`
-- [ ] `logicModels/AuditLog/`, `DeletionRequest/`, `RefreshToken/`
+- [ ] `logicModels/DeletionRequest/`, `RefreshToken/`
 - [ ] `logicModels/DoctorPortfolio/`, `DoctorWork/`
-- [ ] A single `auditLog` helper for automatic write logging
 
 ### Services — ❌ Not implemented
 
@@ -1170,7 +1159,7 @@ Thresholds and policy must not be embedded in route code.
 - [ ] `views/auth/` — login, signup options, register (patient and doctor), forgot/reset password, email verification, 2FA
 - [ ] `views/patient/` — dashboard, waiting queue, turn notification, decline warning, cancellation, medical history, medical report, booking, settings, review
 - [ ] `views/doctor/` — dashboard, pending bookings, booking details, waiting list, clinical summary, diagnosis, prescription, verification status, portfolio editor
-- [ ] `views/admin/` — 16 admin pages
+- [ ] `views/admin/` — 15 admin pages
 - [ ] `views/static/` — home, about, contact, FAQ, privacy, terms, refund
 - [ ] `views/errors/` — 403, 404, 500
 - [ ] `public/css/`, `public/js/`, `public/images/` — assets
@@ -1193,7 +1182,7 @@ Thresholds and policy must not be embedded in route code.
 
 - [ ] Patient module — dashboard, queue, confirm/decline (with MongoDB transactions), medical history, report
 - [ ] Doctor module — dashboard, bookings, waiting list, diagnosis, prescription, verification status, portfolio editor
-- [ ] Admin module — stats, doctor verification, users, patients, bookings, waiting list, services, audit log, deletion requests
+- [ ] Admin module — stats, doctor verification, users, patients, bookings, waiting list, services, deletion requests
 - [ ] Notification module — service, APIs, Notifications Center page
 - [ ] Doctor search and public doctor profile pages
 - [ ] Booking flow — service selection, slot selection, booking creation
@@ -1216,7 +1205,7 @@ Thresholds and policy must not be embedded in route code.
 - [ ] `ml/Dockerfile` — Python service container (Python 3.12)
 - [ ] `services/aiService.js` — Node.js boundary for Python service (base URL, timeout, correlation IDs, retry, error types)
 - [ ] `models/BookingItem.entity.js` — add `prediction` snapshot, `confirmation_required`, `deposit_required`, `reminder_state`, `actual_duration_minutes`, `no_show`, outcome fields
-- [ ] `models/PredictionLog.entity.js` — optional separate collection for prediction audit log
+- [ ] `models/PredictionLog.entity.js` — optional separate collection for prediction logging
 - [ ] `config/env-config.js` — add `prediction` block (base URL, timeout, API key, fallback duration, high-risk threshold, deposit mode, model version pinning)
 - [ ] `.env` / `.env.example` — add `AI_SERVICE_URL`, `AI_SERVICE_TIMEOUT_MS`, `NO_SHOW_HIGH_RISK_THRESHOLD`, `DEFAULT_CONSULTATION_MINUTES`, `DEPOSIT_MODE`, `AI_MODEL_VERSION`, `AI_FEATURE_SCHEMA_VERSION`
 - [ ] `scripts/migrate.js` — ensure indexes on PredictionLog and BookingItem prediction fields
@@ -1254,7 +1243,7 @@ Thresholds and policy must not be embedded in route code.
 | **5. Notification Module** | 1 week | `notificationService`, in-app APIs, critical-event email service, Notifications Center | Unified notification delivery | ⬜ Next |
 | **6. Patient Module** | 3 weeks | Dashboard, queue, confirm/decline, booking flow, medical history, report, settings, review | All patient-facing features | ⬜ Planned |
 | **7. Doctor Module** | 4 weeks | Dashboard, bookings, waiting list, clinical summary, diagnosis, prescription, verification status, portfolio editor | All doctor-facing features | ⬜ Planned |
-| **8. Admin Module** | 4 weeks | Stats, doctor verification, users, patients, bookings, waiting list, services, audit log, deletion requests | Complete admin panel | ⬜ Planned |
+| **8. Admin Module** | 4 weeks | Stats, doctor verification, users, patients, bookings, waiting list, services, deletion requests | Complete admin panel | ⬜ Planned |
 | **9. AI Integration** | 3 weeks | Symptom routing, prescription OCR, analytics | Clinical decision support | ⬜ Planned |
 | **10. AI Scheduling Prediction** | 4 weeks | Python ML service, Node boundary, BookingItem prediction fields, booking flow integration, queue estimates | Duration regression + no-show prediction service | ⬜ Planned |
 | **11. Mobile App (Flutter)** | 4 weeks | Patient app and doctor app | Flutter applications | ⬜ Planned |

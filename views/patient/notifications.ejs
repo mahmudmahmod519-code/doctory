@@ -1,1 +1,44 @@
-<!-- TODO: implement notifications center view -->
+<%# GET /patient/notifications — APIs: GET /api/notifications, PATCH /api/notifications/:id/read, PATCH /api/notifications/read-all, DELETE /api/notifications/:id %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'notifications', pageTitle: 'الإشعارات' }) %>
+<header class="flex flex-wrap items-end justify-between gap-3" data-animate="fade-up">
+  <div><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الإشعارات</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">تنبيهات حجوزاتك ودورك وتقاريرك.</p></div>
+  <button id="read-all" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">done_all</span>تحديد الكل كمقروء</button>
+</header>
+<div class="flex gap-2" role="tablist" aria-label="تصفية"><button data-f="" class="chip px-4 py-2 rounded-full font-label-md text-label-md">الكل</button><button data-f="false" class="chip px-4 py-2 rounded-full font-label-md text-label-md">غير مقروء</button></div>
+<ul id="list" class="bg-surface-container-lowest rounded-2xl shadow-card divide-y divide-surface-container-high overflow-hidden" aria-live="polite"></ul>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, stateBlock, errorBlock, toast } = Doctory;
+  const list = document.getElementById('list'); let filter = '';
+  const ICON = { turn_warning: ['hourglass_top', 'bg-tertiary-fixed text-tertiary'], booking_accepted: ['event_available', 'bg-secondary-container/40 text-secondary'], booking_rejected: ['event_busy', 'bg-error-container text-error'], report_ready: ['clinical_notes', 'bg-primary-fixed text-primary'], system: ['security', 'bg-surface-container text-on-surface-variant'] };
+  const link = (n) => ({ booking_item: '/patient/waiting-queue?booking=' + n.related_entity_id, report: '/patient/medical-report?report=' + n.related_entity_id }[n.related_entity_type] || null);
+  const row = (n) => { const [ic, tone] = ICON[n.type] || ICON.system, href = link(n); return html`
+    <li class="flex items-start gap-4 p-4 ${n.is_read ? '' : 'bg-primary-fixed/20'}" data-id="${n.notification_id}" data-stagger-item>
+      <div class="w-11 h-11 rounded-xl ${tone} flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[22px]">${ic}</span></div>
+      <div class="min-w-0 flex-1"><p class="font-title-md text-title-md ${n.is_read ? '' : 'font-bold'}">${n.title}</p><p class="font-body-md text-body-md text-on-surface-variant">${n.message}</p><p class="font-label-sm text-label-sm text-on-surface-variant mt-1">${fmt.relative(n.created_at)}</p></div>
+      <div class="flex items-center gap-1 shrink-0">
+        ${href ? raw(html`<a href="${href}" data-read class="h-9 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center">فتح</a>`) : ''}
+        <button data-del aria-label="حذف الإشعار" class="w-9 h-9 rounded-lg text-on-surface-variant hover:bg-error-container/50 hover:text-error inline-flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+      </div></li>`; };
+  async function load() {
+    list.innerHTML = '<li class="p-4"><div class="skeleton h-16 rounded-xl"></div></li>'.repeat(3);
+    try {
+      const { data } = await api('GET', '/api/notifications', null, { query: filter ? { is_read: filter } : {} });
+      Doctory.render(list, data.items.length ? data.items.map(row).join('') : '<li>' + stateBlock({ icon: 'notifications_off', title: 'لا توجد إشعارات', text: 'سنخبرك فور حدوث أي جديد.' }) + '</li>');
+    } catch (e) { list.innerHTML = '<li>' + errorBlock(e, 'load') + '</li>'; }
+    document.querySelectorAll('.chip').forEach((c) => { const on = c.dataset.f === filter; c.className = 'chip px-4 py-2 rounded-full font-label-md text-label-md ' + (on ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low hover:bg-surface-container'); });
+  }
+  window.load = load;
+  document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => { filter = c.dataset.f; load(); }));
+  document.getElementById('read-all').addEventListener('click', async () => { try { await api('PATCH', '/api/notifications/read-all'); toast('تم تحديد الكل كمقروء', 'success'); load(); } catch (e) { toast(e.message, 'error'); } });
+  list.addEventListener('click', async (e) => {
+    const li = e.target.closest('li[data-id]'); if (!li) return; const id = li.dataset.id;
+    if (e.target.closest('[data-del]')) { try { await api('DELETE', '/api/notifications/' + id); li.remove(); toast('تم حذف الإشعار', 'success'); } catch (err) { toast(err.message, 'error'); } }
+    else if (e.target.closest('[data-read]')) { api('PATCH', '/api/notifications/' + id + '/read').catch(() => {}); }
+  });
+  load();
+});
+</script>
+</body>
+</html>

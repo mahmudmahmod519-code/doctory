@@ -37,7 +37,6 @@ async function migrate() {
   require('../models/BookingItem.entity.js');
   require('../models/Review.entity.js');
   require('../models/Report.entity.js');
-  require('../models/AuditLog.entity.js');
   require('../models/DeletionRequest.entity.js');
   require('../models/RefreshToken.entity.js');
   require('../models/Notification.entity.js');

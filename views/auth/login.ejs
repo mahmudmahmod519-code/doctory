@@ -1,1 +1,160 @@
-<!-- TODO: implement login view -->
+<%#
+  GET /auth/login — Stitch screen "تسجيل الدخول — Login".
+  API: POST /api/auth/login { email, password }  → { data: { user, requires_2fa? } }
+  Flow: requires_2fa (doctor/admin, or patient with 2FA on) → /auth/2fa/verify?next=...
+        else redirect by role (patient → ?next or /patient/dashboard, doctor → /doctor/dashboard, admin → /admin/dashboard)
+%>
+<%- include('../layouts/main-layout', { part: 'top', pageTitle: 'تسجيل الدخول' }) %>
+
+<section class="w-full max-w-lg" data-animate="scale">
+  <div class="w-full bg-surface-container-lowest shadow-xl rounded-2xl p-6 sm:p-9 relative overflow-hidden">
+    <div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-l from-primary-container via-secondary-fixed-dim to-secondary"></div>
+
+    <div class="flex flex-col items-center text-center mb-6" data-stagger>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low text-primary mb-2">
+        <span class="live-dot text-secondary-fixed-dim"></span>
+        <span class="font-label-sm text-label-sm">بوابة الدخول الموحدة</span>
+      </span>
+      <h1 class="font-headline-lg text-headline-lg-mobile sm:text-headline-lg text-on-surface font-extrabold">تسجيل الدخول</h1>
+      <p class="font-body-md text-body-md text-on-surface-variant max-w-sm mt-1">مرحباً بعودتك! ادخل لمتابعة مواعيدك ودورك في قائمة الانتظار.</p>
+    </div>
+
+    <div class="grid grid-cols-2 p-1 bg-surface-container-low rounded-xl mb-6" role="tablist" aria-label="نوع الحساب">
+      <button type="button" role="tab" data-role-tab="patient" aria-selected="true"
+        class="relative z-10 py-2.5 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">person</span>مريض
+      </button>
+      <button type="button" role="tab" data-role-tab="clinician" aria-selected="false"
+        class="relative z-10 py-2.5 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">stethoscope</span>طبيب / إداري
+      </button>
+    </div>
+
+    <form id="login-form" class="flex flex-col gap-4" novalidate>
+      <div id="form-alert" role="alert" class="hidden items-start gap-2.5 p-3 rounded-lg bg-error-container text-on-error-container font-body-md text-body-md">
+        <span class="material-symbols-outlined text-[20px] mt-0.5">error</span><span data-msg></span>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label for="email" class="font-label-md text-label-md text-on-surface font-semibold">البريد الإلكتروني</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">mail</span>
+          <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" dir="ltr"
+            class="field pr-11 text-right" placeholder="patient@gmail.com" />
+        </div>
+        <p data-error-for="email" class="hidden font-label-sm text-label-sm text-error"></p>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center justify-between">
+          <label for="password" class="font-label-md text-label-md text-on-surface font-semibold">كلمة المرور</label>
+          <a href="/auth/forgot-password" class="font-label-md text-label-md text-primary hover:underline">نسيت كلمة المرور؟</a>
+        </div>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">lock</span>
+          <input id="password" name="password" type="password" required minlength="6" autocomplete="current-password"
+            class="field pr-11 pl-11" placeholder="••••••••" />
+          <button type="button" data-toggle-password="password" aria-label="إظهار كلمة المرور"
+            class="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md text-on-surface-variant hover:text-on-surface flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px]">visibility</span>
+          </button>
+        </div>
+        <p data-error-for="password" class="hidden font-label-sm text-label-sm text-error"></p>
+      </div>
+
+      <label class="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+        <input type="checkbox" name="remember" class="w-[18px] h-[18px] rounded border-2 border-outline accent-primary-container" />
+        <span class="font-label-md text-label-md text-on-surface-variant">تذكرني على هذا الجهاز</span>
+      </label>
+
+      <button id="submit-btn" type="submit"
+        class="w-full h-12 mt-1 bg-primary-container text-on-primary font-title-md text-title-md rounded-lg shadow-md hover:shadow-lift hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+        <span>تسجيل الدخول</span><span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </button>
+
+      <div id="clinician-notice" class="hidden p-3.5 rounded-lg bg-surface-container-low items-start gap-2.5">
+        <span class="material-symbols-outlined text-secondary text-[20px] shrink-0 mt-0.5 icon-fill">security</span>
+        <p class="font-body-md text-body-md text-on-surface-variant"><strong class="text-on-surface">للأطباء والإداريين:</strong> سيُطلب رمز التحقق بخطوتين (2FA) من تطبيق المصادقة بعد كلمة المرور.</p>
+      </div>
+    </form>
+
+    <div class="relative my-6 flex items-center justify-center">
+      <div class="absolute inset-x-0 h-px bg-surface-container-high"></div>
+      <span class="relative px-4 bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant">ليس لديك حساب؟</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <a href="/auth/register/patient" class="h-11 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">person_add</span>تسجيل مريض جديد
+      </a>
+      <a href="/auth/register/doctor" class="h-11 px-4 rounded-lg bg-secondary-container/30 hover:bg-secondary-container/50 text-on-secondary-container font-label-md text-label-md flex items-center justify-center gap-2 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">stethoscope</span>انضم كطبيب
+      </a>
+    </div>
+  </div>
+</section>
+
+<%- include('../layouts/main-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, setBusy, showFieldErrors, formToObject } = Doctory;
+  const form = document.getElementById('login-form');
+  const alertBox = document.getElementById('form-alert');
+  const btn = document.getElementById('submit-btn');
+  const email = document.getElementById('email');
+  const next = new URLSearchParams(location.search).get('next');
+  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+
+  // Role tabs: visual hint only — the server decides the role from the account.
+  const tabs = document.querySelectorAll('[data-role-tab]');
+  const notice = document.getElementById('clinician-notice');
+  function selectTab(role) {
+    tabs.forEach((t) => {
+      const on = t.dataset.roleTab === role;
+      t.setAttribute('aria-selected', on);
+      t.classList.toggle('bg-surface-container-lowest', on); t.classList.toggle('shadow-sm', on);
+      t.classList.toggle('text-primary', on); t.classList.toggle('font-bold', on);
+      t.classList.toggle('text-on-surface-variant', !on);
+    });
+    notice.classList.toggle('hidden', role !== 'clinician'); notice.classList.toggle('flex', role === 'clinician');
+    email.placeholder = role === 'clinician' ? 'doctor@clinic.com' : 'patient@gmail.com';
+    if (role === 'clinician' && window.DoctoryMotion) window.DoctoryMotion.animate(notice, { opacity: [0, 1], y: [-6, 0] }, { duration: 0.25 });
+  }
+  tabs.forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.roleTab)));
+  selectTab('patient');
+
+  function showAlert(msg) {
+    alertBox.querySelector('[data-msg]').textContent = msg;
+    alertBox.classList.remove('hidden'); alertBox.classList.add('flex');
+    if (window.DoctoryMotion) window.DoctoryMotion.animate(alertBox, { x: [0, -8, 8, -4, 4, 0] }, { duration: 0.4 });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alertBox.classList.add('hidden'); alertBox.classList.remove('flex');
+    const data = formToObject(form);
+    const errors = {};
+    if (!data.email || !/^\S+@\S+\.\S+$/.test(data.email)) errors.email = 'أدخل بريداً إلكترونياً صحيحاً';
+    if (!data.password || data.password.length < 6) errors.password = 'كلمة المرور 6 أحرف على الأقل';
+    showFieldErrors(form, errors);
+    if (Object.keys(errors).length) return;
+
+    setBusy(btn, true, 'جارٍ التحقق...');
+    try {
+      const res = await api('POST', '/api/auth/login', { email: data.email.toLowerCase(), password: data.password, remember: !!data.remember }, { redirectOn401: false });
+      const user = res.data?.user || {};
+      if (res.data?.requires_2fa || res.data?.user?.enable_2fa) {
+        location.href = '/auth/2fa/verify' + (safeNext ? '?next=' + encodeURIComponent(safeNext) : '');
+        return;
+      }
+      const home = { admin: '/admin/dashboard', doctor: '/doctor/dashboard' }[user.role] || '/patient/dashboard';
+      location.href = (user.role === 'patient' || !user.role) && safeNext ? safeNext : home;
+    } catch (err) {
+      setBusy(btn, false);
+      if (err.payload?.errors) showFieldErrors(form, err.payload.errors);
+      showAlert(err.status === 401 ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : err.message);
+    }
+  });
+});
+</script>
+</body>
+</html>

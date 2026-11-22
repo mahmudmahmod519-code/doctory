@@ -1,1 +1,16 @@
-<!-- TODO: implement appointment cancelled view -->
+<%# GET /patient/appointment-cancelled?reason=doctor_rejected|system|decline_limit&booking= %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'dashboard', pageTitle: 'تم إلغاء الموعد' }) %>
+<% const reasons = { doctor_rejected: 'اعتذر الطبيب عن هذا الموعد.', system: 'تم إلغاء الموعد من قِبل النظام.', decline_limit: 'تم الإلغاء بعد استنفاد محاولات تأجيل الدور.' };
+   const msg = reasons[reason] || 'تم إلغاء هذا الموعد.'; %>
+<section class="max-w-xl mx-auto w-full bg-surface-container-lowest rounded-2xl shadow-lift p-8 text-center flex flex-col items-center gap-5" data-animate="scale">
+  <div class="w-20 h-20 rounded-full bg-error-container text-error flex items-center justify-center"><span class="material-symbols-outlined icon-fill text-[40px]">event_busy</span></div>
+  <h1 class="font-headline-md text-headline-md font-extrabold">تم إلغاء الموعد</h1>
+  <p class="font-body-md text-body-md text-on-surface-variant max-w-md"><%= msg %></p>
+  <div class="grid sm:grid-cols-2 gap-3 w-full">
+    <a href="/doctors" class="h-12 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md inline-flex items-center justify-center gap-2"><span class="material-symbols-outlined">add_circle</span>احجز موعداً جديداً</a>
+    <a href="/contact-us" class="h-12 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center justify-center gap-2"><span class="material-symbols-outlined text-[20px]">support_agent</span>تواصل مع العيادة</a>
+  </div>
+</section>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+</body>
+</html>

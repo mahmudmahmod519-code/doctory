@@ -1,1 +1,10 @@
-<!-- TODO: implement privacy policy view -->
+<%- include('../layouts/guest-layout', { part: 'top', active: 'privacy', pageTitle: 'سياسة الخصوصية' }) %>
+<section class="max-w-3xl mx-auto px-4 lg:px-gutter-desktop py-12 lg:py-16">
+  <header class="mb-8" data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">سياسة الخصوصية</h1></header>
+  <div class="bg-surface-container-lowest rounded-2xl shadow-card p-6 sm:p-8 flex flex-col gap-5 font-body-md text-body-md text-on-surface-variant" data-animate="fade-up">
+<p class="text-tertiary font-label-md">نسخة أولية — تحتاج مراجعة قانونية قبل الإطلاق.</p><h2 class="font-title-lg text-title-lg font-bold text-on-surface"> ما نجمعه</h2><p>بيانات الحساب (الاسم، البريد، الهاتف)، بيانات الحجوزات، والسجل الطبي الذي يُنشئه طبيبك.</p><h2 class="font-title-lg text-title-lg font-bold text-on-surface"> كيف نحميه</h2><p>تُحفظ كلمات المرور مشفّرة، وتُرسل الجلسات عبر ملفات تعريف ارتباط محمية، ولا يطّلع المشرفون على محتوى التقارير الطبية.</p><h2 class="font-title-lg text-title-lg font-bold text-on-surface"> حقوقك</h2><p>يمكنك تعديل بياناتك أو طلب حذف حسابك من صفحة الإعدادات في أي وقت.</p>
+  </div>
+</section>
+<%- include('../layouts/guest-layout', { part: 'bottom' }) %>
+</body>
+</html>

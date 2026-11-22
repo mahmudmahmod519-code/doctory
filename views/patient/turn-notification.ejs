@@ -1,1 +1,43 @@
-<!-- TODO: implement turn notification view -->
+<%# GET /patient/turn-notification?booking= — API: GET /api/patient/queue/:id, PATCH /api/patient/queue/:id/confirm | /decline %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'queue', pageTitle: 'حان دورك' }) %>
+<div id="t-root" class="max-w-xl mx-auto w-full"><div class="skeleton h-96 rounded-2xl"></div></div>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, html, fmt, toast, setBusy, render, errorBlock } = Doctory;
+  const id = new URLSearchParams(location.search).get('booking') || '<%= typeof bookingItemId !== "undefined" && bookingItemId ? bookingItemId : "" %>';
+  const root = document.getElementById('t-root');
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/patient/queue/' + encodeURIComponent(id));
+      render(root, html`
+        <section class="bg-surface-container-lowest rounded-2xl shadow-lift p-8 text-center flex flex-col items-center gap-5" data-animate="scale">
+          <div class="relative"><span class="absolute inset-0 rounded-full bg-secondary/30 animate-ping"></span><div class="relative w-24 h-24 rounded-full bg-secondary text-on-secondary flex items-center justify-center"><span class="material-symbols-outlined icon-fill text-[48px]">notifications_active</span></div></div>
+          <div><h1 class="font-headline-lg text-headline-lg-mobile font-extrabold">حان دورك الآن!</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">تفضّل بالدخول إلى عيادة ${d.doctor?.name}</p></div>
+          <p class="num font-display-xl text-7xl font-extrabold text-primary">${fmt.ticket(d.queue_number)}</p>
+          <p class="font-body-md text-body-md text-on-surface-variant">${d.doctor?.address || ''} · ${fmt.date(d.appointment_date)} · <span class="num">${fmt.time(d.appointment_time)}</span></p>
+          <div class="grid sm:grid-cols-2 gap-3 w-full">
+            <button id="confirm" class="h-12 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md inline-flex items-center justify-center gap-2"><span class="material-symbols-outlined">how_to_reg</span>أنا موجود</button>
+            <button id="decline" class="h-12 rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md inline-flex items-center justify-center gap-2 hover:bg-surface-container"><span class="material-symbols-outlined text-[20px]">schedule</span>أحتاج وقتاً إضافياً</button>
+          </div>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">محاولات التأجيل المتبقية: <span class="num font-bold">${d.attempts_remaining ?? 2}</span></p>
+        </section>`);
+      document.getElementById('confirm').onclick = async (e) => {
+        setBusy(e.currentTarget, true, 'جارٍ التأكيد...');
+        try { await api('PATCH', '/api/patient/queue/' + id + '/confirm'); toast('تم تأكيد حضورك', 'success'); setTimeout(() => (location.href = '/patient/dashboard'), 800); }
+        catch (err) { setBusy(e.currentTarget, false); toast(err.message, 'error'); }
+      };
+      document.getElementById('decline').onclick = async (e) => {
+        const r = await Doctory.confirm({ title: 'تأجيل دورك؟', message: 'سيُنقل دورك للمريض التالي، وعدد المحاولات محدود قبل إلغاء الحجز.', confirmText: 'نعم، تأجيل', danger: true });
+        if (!r.ok) return;
+        try { const res = await api('PATCH', '/api/patient/queue/' + id + '/decline'); const left = res.data?.attempts_remaining;
+          location.href = (left === 0 ? '/patient/appointment-cancelled?reason=decline_limit&booking=' : '/patient/decline-warning?booking=') + id; }
+        catch (err) { toast(err.message, 'error'); }
+      };
+    } catch (err) { root.innerHTML = errorBlock(err, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

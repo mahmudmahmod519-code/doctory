@@ -5,7 +5,7 @@ Same template as `README_APIs.md`, plus one extra line `path`, because the templ
 
 ### General rules
 
-- **Access:** every `/api/admin/*` endpoint needs the JWT cookie and role `admin` (401 not authenticated, 403 wrong role). Every write also creates an Audit Log entry.
+- **Access:** every `/api/admin/*` endpoint needs the JWT cookie and role `admin` (401 not authenticated, 403 wrong role).
 - **Ids:** `:id` of users, doctors and services is the external UUID (`user_id`, `portfolio_id`, `work_id`). `bookings` and `booking_items` have no UUID column, so their paths use the INT `id`.
 - **Lists:** accept `page`, `limit`, `sort`, `order` and return `data: { items, page, limit, total }`. Soft-deleted rows are hidden unless `include_deleted=true`.
 - **Case:** Express routing is case-insensitive by default, so `/api/admin/Doctors/pending` in the Auth spec and `/api/admin/doctors/pending` here are the same route. Declare `/doctors/pending` before `/doctors/:id`.
@@ -52,7 +52,7 @@ http method: PATCH
 path: /api/admin/doctors/:id/approve
 name: approveDoctor
 role: admin
-description by arabic: (from Auth spec) الموافقة على دكتور: الـ verification تبقى approved و users.status تبقى active، يتبعتله إيميل، وتتسجل في الـ Audit Log. 409 لو الدكتور مش pending.
+description by arabic: (from Auth spec) الموافقة على دكتور: الـ verification تبقى approved و users.status تبقى active، يتبعتله إيميل. 409 لو الدكتور مش pending.
 ```
 
 ```
@@ -371,43 +371,6 @@ description by arabic: حذف خدمة (Soft Delete).
 
 ---
 
-### Admin – Audit Log
-
-```
-type: API
-http method: GET
-path: /api/admin/audit-logs
-name: listAuditLogs
-role: admin
-description by arabic: قراءة سجل العمليات (قراءة فقط، مفيش تعديل ولا حذف). Query: action, actor_id, actor_role, entity_type, entity_id, from, to, page, limit.
-```
-
-```
-type: API
-http method: GET
-path: /api/admin/audit-logs/:id
-name: getAuditLog
-role: admin
-description by arabic: تفاصيل عملية واحدة بما فيها الـ metadata الكاملة (القيمة القديمة والجديدة، سبب الرفض).
-
-Log item example:
-{
-  "id": 101,
-  "actorId": "user-uuid",
-  "actorRole": "doctor",
-  "action": "BOOKING_ACCEPTED",
-  "entityType": "booking_item",
-  "entityId": "55",
-  "ip": "41.x.x.x",
-  "metadata": { "from": "pending", "to": "accepted" },
-  "createdAt": "2026-10-06T10:30:00Z"
-}
-
-Suggested actions: LOGIN, LOGIN_FAILED, USER_CREATED, USER_UPDATED, USER_ROLE_CHANGED, USER_SUSPENDED, USER_ACTIVATED, USER_DELETED, USER_RESTORED, FORCE_LOGOUT, PASSWORD_RESET_SENT, TWO_FA_RESET, DOCTOR_APPROVED, DOCTOR_REJECTED, BOOKING_ACCEPTED, BOOKING_REJECTED, BOOKING_UPDATED, BOOKING_CANCELLED, BOOKING_DELETED, BOOKING_ITEM_UPDATED, BOOKING_ITEM_DELETED, SERVICE_APPROVED, SERVICE_REJECTED, DELETION_APPROVED, DELETION_REJECTED.
-```
-
----
-
 ### Admin – Deletion Requests (proposed)
 
 ```
@@ -536,14 +499,6 @@ page: /admin/services
 name: admin_services_render
 role: admin
 description: مراجعة خدمات الدكاترة والموافقة عليها.
-```
-
-```
-type: RENDER
-page: /admin/audit-log
-name: admin_audit_log_render
-role: admin
-description: سجل العمليات للقراءة فقط.
 ```
 
 ```

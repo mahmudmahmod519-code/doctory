@@ -1,1 +1,10 @@
-<!-- TODO: implement terms and conditions view -->
+<%- include('../layouts/guest-layout', { part: 'top', active: 'terms', pageTitle: 'الشروط والأحكام' }) %>
+<section class="max-w-3xl mx-auto px-4 lg:px-gutter-desktop py-12 lg:py-16">
+  <header class="mb-8" data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الشروط والأحكام</h1></header>
+  <div class="bg-surface-container-lowest rounded-2xl shadow-card p-6 sm:p-8 flex flex-col gap-5 font-body-md text-body-md text-on-surface-variant" data-animate="fade-up">
+<p class="text-tertiary font-label-md">نسخة أولية — تحتاج مراجعة قانونية قبل الإطلاق.</p><h2 class="font-title-lg text-title-lg font-bold text-on-surface"> استخدام المنصة</h2><p>تُستخدم Doctory لحجز المواعيد مع الأطباء ومتابعة الدور. يلتزم المستخدم بتقديم بيانات صحيحة والحفاظ على سرية حسابه.</p><h2 class="font-title-lg text-title-lg font-bold text-on-surface"> الحجز والحضور</h2><p>الحجز طلب يتأكد بموافقة الطبيب. تكرار تأجيل الدور أو التغيّب قد يؤدي إلى إلغاء الحجز تلقائياً.</p><h2 class="font-title-lg text-title-lg font-bold text-on-surface"> المسؤولية الطبية</h2><p>المنصة وسيط للحجز ولا تقدّم تشخيصاً. المسؤولية الطبية على الطبيب المعالج.</p>
+  </div>
+</section>
+<%- include('../layouts/guest-layout', { part: 'bottom' }) %>
+</body>
+</html>

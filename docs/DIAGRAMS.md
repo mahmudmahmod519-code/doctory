@@ -41,8 +41,7 @@ This file is **separate from per-page UI prompts**. Where a prompt describes a *
 | 10 | [Waiting List Management Flow](#10-waiting-list-management-flow-scenario-4) | Diagram + Animation |
 | 11 | [Data Deletion Request Flow — Law 151/2020](#11-data-deletion-request-flow--law-1512020-scenario-5) | Diagram |
 | 12 | [Notification System Flow](#12-notification-system-flow-cross-cutting) | Diagram |
-| 13 | [Audit Log Write Flow](#13-audit-log-write-flow-cross-cutting) | Diagram |
-| 14 | [Mongoose vs Previous Architecture](#14-mongoose-vs-previous-architecture-migration-note-diagram) | Diagram |
+| 13 | [Mongoose vs Previous Architecture](#13-mongoose-vs-previous-architecture-migration-note-diagram) | Diagram |
 | — | [🔁 General Diagram & Animation Style Guide](#-general-diagram--animation-style-guide) | Style guide |
 
 ---
@@ -76,12 +75,12 @@ LAYER 3 — CORE SERVICES (4 teal boxes side by side, branching downward from th
   - "Notification Service" — in-app notifications + critical emails ONLY.
     Include a small red crossed-out SMS bubble icon with the label "No SMS".
     Add the annotation: "In-App + Critical Email Only".
-  - "Audit & Compliance Service" — audit_logs, deletion_requests, Egyptian Law 151/2020, soft delete & restore
+  - "Compliance Service" — deletion_requests, Egyptian Law 151/2020, soft delete & restore
 
 LAYER 4 — DATA LAYER (2 boxes):
-  - "MongoDB (Mongoose)" — SOLID green border, the primary store. List the 11 collections inside as
+  - "MongoDB (Mongoose)" — SOLID green border, the primary store. List the 10 collections inside as
     small monospace chips: users, doctor_portfolios, doctor_works, bookings, booking_items, reviews,
-    reports, audit_logs, deletion_requests, refresh_tokens, notifications
+    reports, deletion_requests, refresh_tokens, notifications
   - "Redis" — GRAY DASHED border (planned/future), labeled "Planned — cache & queue store".
     Sub-label: "Booking & Queue Service · session store · wait-time cache"
 
@@ -168,15 +167,12 @@ with a small key icon on the primary key and "FK" markers on references):
    title | message | is_read (default false) | related_entity_type | related_entity_id
    Annotation: "In-app only. Email (Nodemailer) is used separately for critical events. NO SMS."
 
-9. audit_logs (SYSTEM) — insert-only, draw with a small "insert only" lock tag
-   PK _id | actor_id | actor_role | action | entity_type | entity_id | ip | metadata (JSON)
-
-10. deletion_requests (SYSTEM)
+9. deletion_requests (SYSTEM)
     PK _id | FK user_id → users | status [pending|approved|rejected] | reason
     FK reviewed_by → users | reviewed_at
     Annotation: "Egyptian Personal Data Protection Law 151/2020"
 
-11. refresh_tokens (SYSTEM)
+10. refresh_tokens (SYSTEM)
     PK _id | FK user_id → users | token (unique) | expires_at (TTL index) | revoked_at
 
 RELATIONSHIP LABELS with crow's foot notation:
@@ -322,7 +318,6 @@ section-divider row:
    - Manage users & roles
    - Suspend / restore an account
    - Force-logout a user
-   - View the system-wide audit log
    - Approve / reject deletion requests
 
 MARKS — use exactly this system and explain it in a small legend at the bottom:
@@ -339,7 +334,7 @@ CORRECT MARKINGS:
    Write a diagnosis = ✗ | Write a prescription = ✗ | Complete a consultation = ✗
    Verify doctors = ✗ | Manage own portfolio = ✗ | Manage own services = ✗
    Approve / reject services = ✗ | Manage users & roles = ✗ | Suspend / restore = ✗
-   Force-logout a user = ✗ | View audit log = ✗ | Approve deletion requests = ✗
+   Force-logout a user = ✗ | Approve deletion requests = ✗
 
   DOCTOR:
    Register an account = ✓ | Verify email = ✓ | Manage own profile & settings = ✓
@@ -351,7 +346,7 @@ CORRECT MARKINGS:
    Write a diagnosis = ✓ | Write a prescription = ✓ | Complete a consultation = ✓
    Verify doctors = ✗ | Manage own portfolio & working hours = ✓ | Manage own services = ✓
    Approve / reject doctor services = ✗ | Manage users & roles = ✗ | Suspend / restore = ✗
-   Force-logout = ✗ | View audit log = ✗ | Approve deletion requests = ✗
+   Force-logout = ✗ | Approve deletion requests = ✗
 
   ADMIN:
    Register an account = ✗ (admins are created by an existing admin)
@@ -365,7 +360,7 @@ CORRECT MARKINGS:
    Write a diagnosis = ✗ | Write a prescription = ✗ | Complete a consultation = ✗
    Verify / approve / reject doctors = ✓ | Manage own portfolio = ✗ | Manage own services = ✗
    Approve / reject doctor services = ✓ | Manage users & roles = ✓ | Suspend / restore = ✓
-   Force-logout a user = ✓ | View the system-wide audit log = ✓ | Approve deletion requests = ✓
+   Force-logout a user = ✓ | Approve deletion requests = ✓
 
 ADD A FOOTNOTE BAR at the bottom with these three guards, in a soft red-tinted strip:
   "GUARDS — An admin cannot change their own role, suspend themselves, or delete themselves.
@@ -404,12 +399,12 @@ TRANSITIONS — every arrow must carry a bold trigger label plus a smaller condi
   pending ──► accepted
      trigger label: "Doctor accepts the booking"
      note: "booking_items.status = 'accepted' · patient is added to the waiting queue ·
-            in-app notification to patient · critical email to patient · audit_logs entry"
+            in-app notification to patient · critical email to patient"
 
   pending ──► rejected
      trigger label: "Doctor rejects the booking"
      note: "booking_items.status = 'rejected' · the appointment slot is freed ·
-            in-app notification to patient · critical email to patient · audit_logs entry"
+            in-app notification to patient · critical email to patient"
 
   accepted ──► completed
      trigger label: "Doctor completes the visit"
@@ -419,13 +414,13 @@ TRANSITIONS — every arrow must carry a bold trigger label plus a smaller condi
   accepted ──► cancelled
      trigger label: "Patient declines the turn TWICE"
      note: "booking_items.status = 'cancelled' · cancellation reason is recorded ·
-            in-app notification to patient · critical email to patient · audit_logs entry ·
+            in-app notification to patient · critical email to patient ·
             the system automatically calls the next eligible patient"
 
   accepted ──► rejected
      trigger label: "Admin removes the patient from the session (soft delete)"
      note: "status = 'rejected' + deleted_at set · the patient moves to the REMOVED group
-            in the waiting list · audit_logs entry"
+            in the waiting list"
 
   pending ──► cancelled
      trigger label: "Admin cancels the whole session"
@@ -508,7 +503,6 @@ FLOWCHART (rounded rectangles = actions, diamonds = decisions, parallelograms = 
         │             ┌────────────────────────────────────┐
         │             │ In-app notification (doctor_verified)│
         │             │ CRITICAL EMAIL to the doctor         │
-        │             │ audit_logs entry: DOCTOR_APPROVED     │
         │             └────────────────────────────────────┘
         │                   │
         │                   ▼
@@ -529,7 +523,6 @@ FLOWCHART (rounded rectangles = actions, diamonds = decisions, parallelograms = 
                                       ┌────────────────────────────────────┐
                                       │ In-app notification (doctor_verified)│
                                       │ CRITICAL EMAIL to the doctor         │
-                                      │ audit_logs entry: DOCTOR_REJECTED     │
                                       └────────────────────────────────────┘
                                             │
                                             ▼
@@ -666,7 +659,6 @@ FLOWCHART:
                                      ┌──────────────────────────────────────┐
                                      │ In-app APPOINTMENT CANCELLED notice   │
                                      │ CRITICAL EMAIL to the patient         │
-                                     │ audit_logs entry                       │
                                      └──────────────────────────────────────┘
                                            │
                                            ▼
@@ -678,8 +670,8 @@ FLOWCHART:
 
 SIDE ANNOTATION BOX (bottom-left, soft gray):
   "Decline rule — the FIRST decline does not cancel the appointment. The SECOND decline
-   cancels the active queue entry, is written to the audit log, notifies the patient, and
-   the system moves on to the next eligible patient automatically."
+   cancels the active queue entry, notifies the patient, and the system moves on to the
+   next eligible patient automatically."
 
 STYLE: teal action boxes, amber decision diamonds, green for the confirm branch,
 amber for the first-decline branch, red for the second-decline branch, purple for
@@ -793,7 +785,6 @@ FLOWCHART (horizontal swim-lane style, with 2 lanes: "DOCTOR" on top, "SYSTEM" b
   │ "booking_items.status = 'completed'  +  completed_at = now"   │
   │ "A medical REPORT is generated"                               │
   │   ↳ reports: user_id · portfolio_id · description · medicines[]│
-  │ "audit_logs entry written"                                    │
   │ "In-app notification to the patient"                           │
   │ "CRITICAL EMAIL to the patient (final booking decision)"       │
   └────────────────────────────────────────────────────────────────┘
@@ -847,13 +838,11 @@ START:
         │     "A password-setup link is emailed to the user."
         │        (if role = 'doctor' → also add doctor_name, specialty, title)
         │     "In-app notification + CRITICAL EMAIL (password setup)"
-        │     "audit_logs entry: USER_CREATED"
         │     "If role = 'admin' → 2FA is enforced on the first login"
         │     "409 Conflict if the email already exists"
         │
         ├── B) EDIT DATA
         │     "PATCH /api/admin/users/:id  { name, email, phone, address, birth_date }"
-        │     "audit_logs entry: USER_UPDATED"
         │
         ├── C) CHANGE ROLE
         │     "PATCH /api/admin/users/:id/role  { role }"
@@ -862,7 +851,6 @@ START:
         │        (doctors are created through registration + verification)"
         │     "◆ GUARD: the last active admin cannot be demoted → 409 Conflict"
         │     "ALL refresh tokens for that user are revoked immediately"
-        │     "audit_logs entry: USER_ROLE_CHANGED"
         │
         ├── D) SUSPEND / ACTIVATE
         │     "PATCH /api/admin/users/:id/status  { status: 'suspended' | 'active', reason }"
@@ -870,7 +858,6 @@ START:
         │     "◆ GUARD: the last active admin cannot be deactivated → 409 Conflict"
         │     "All sessions are cancelled; any later login returns 403"
         │     "An already-issued Access JWT stays valid until it expires"
-        │     "audit_logs entry: USER_SUSPENDED / USER_ACTIVATED"
         │
         ├── E) SOFT DELETE
         │     "DELETE /api/admin/users/:id"
@@ -879,25 +866,21 @@ START:
         │     "◆ GUARD: the last active admin cannot be deleted → 409 Conflict"
         │     "All sessions are cancelled and the user is hidden from every list"
         │     "Related bookings, reviews and reports are PRESERVED (no cascade)"
-        │     "audit_logs entry: USER_DELETED"
         │
         ├── F) RESTORE
         │     "PATCH /api/admin/users/:id/restore"
         │     "The row comes back, but its status returns to 'suspended'"
         │     "The admin must then explicitly ACTIVATE the account"
-        │     "audit_logs entry: USER_RESTORED"
         │
         ├── G) FORCE LOGOUT
         │     "POST /api/admin/users/:id/force-logout"
         │     "Every refresh token for that user is revoked"
         │     "The current Access JWT remains valid until it expires"
-        │     "audit_logs entry: FORCE_LOGOUT"
         │
         ├── H) RESET PASSWORD
         │     "POST /api/admin/users/:id/reset-password"
         │     "A reset link is emailed to the user — the admin never sees the password"
         │     "In-app notification + CRITICAL EMAIL"
-        │     "audit_logs entry: PASSWORD_RESET_SENT"
         │     "429 if repeated too many times"
         │
         └── I) RESET 2FA
@@ -905,12 +888,10 @@ START:
               "secure_key is cleared and enable_2fa is switched off"
               "Doctors and admins must re-enable 2FA on their next login, because it is
                mandatory for them"
-              "audit_logs entry: TWO_FA_RESET"
 
 FOOTNOTE BAR (soft red-tinted strip across the bottom):
   "GUARDS — An admin can never change their own role, suspend themselves, or delete themselves.
-   The LAST active admin can never be deleted, suspended, or demoted.
-   Every admin action is written to audit_logs before it takes effect."
+   The LAST active admin can never be deleted, suspended, or demoted."
 
 STYLE: rounded action boxes in teal, amber diamonds for decisions, red-tinted guard
 diamonds, purple for email/notification callouts, gray for the endpoints, orthogonal
@@ -1096,7 +1077,7 @@ FLOWCHART:
         │          │
         │          └── ANONYMISE
         │                "Personally identifying fields are cleared or replaced"
-        │                "the booking and audit history is retained for legal traceability"
+        │                "the booking history is retained for legal traceability"
         │          │
         │          ▼
         │     "deletion_requests.status = 'approved'"
@@ -1107,7 +1088,6 @@ FLOWCHART:
         │     │ In-app notification (deletion_request_update) │
         │     │ CRITICAL EMAIL to the patient — your data      │
         │     │   deletion request was approved                │
-        │     │ audit_logs entry: DELETION_APPROVED            │
         │     │   (recorded WITHOUT sensitive patient data)    │
         │     └──────────────────────────────────────────────┘
         │
@@ -1122,13 +1102,11 @@ FLOWCHART:
               │ In-app notification (deletion_request_update) │
               │ CRITICAL EMAIL to the patient — the request   │
               │   was rejected, with the reason               │
-              │ audit_logs entry: DELETION_REJECTED           │
               │   (recorded WITHOUT sensitive patient data)    │
               └──────────────────────────────────────────────┘
 
 CALLOUT BOX (soft red strip, bottom):
-  "409 Conflict if the same request has already been decided.
-   The audit log records the ADMIN'S DECISION ONLY — never the patient's medical content."
+  "409 Conflict if the same request has already been decided."
 
 COLOUR RULES: teal action boxes, amber decision diamonds, green for approve, red for reject,
 purple for in-app/email callouts, and the 'hard delete' diamond in a deeper red.
@@ -1230,106 +1208,7 @@ cross-out over the SMS box, clean orthogonal connectors, monospace endpoint labe
 
 ---
 
-## 13. Audit Log Write Flow (Cross-Cutting)
-
-**Diagram Prompt**
-
-```
-Create a professional cross-cutting flowchart for the Doctory audit log mechanism, landscape,
-white background. This diagram applies to EVERY write operation in the system.
-
-Title: "Doctory — Audit Log Write Flow" with Arabic subtitle "نظام عيادات ذكي".
-
-FLOWCHART:
-
-  (Start) "A write operation is requested by a logged-in user"
-        │
-        ▼
-  ┌────────────────────── WRITE OPERATIONS THAT ARE AUDITED ───────────────────────┐
-  │  ADMIN MODULE                                                                    │
-  │   • create a user · update a user · change a role                                │
-  │   • suspend / activate a user · soft-delete a user · restore a user              │
-  │   • force-logout a user · send a password reset · reset 2FA                     │
-  │   • approve a doctor · reject a doctor                                          │
-  │   • approve / reject a doctor service                                            │
-  │   • update a booking · update a booking item · cancel a session                 │
-  │   • approve / reject a deletion request                                          │
-  │                                                                                  │
-  │  DOCTOR MODULE                                                                   │
-  │   • accept a booking · reject a booking                                         │
-  │   • write a diagnosis · write a prescription · complete a consultation           │
-  │   • update the own portfolio / services                                          │
-  │                                                                                  │
-  │  PATIENT MODULE                                                                  │
-  │   • confirm a queue turn · decline a queue turn (twice = cancelled)             │
-  │   • book an appointment · submit a review                                        │
-  │   • request data deletion · update own profile                                   │
-  │   • change own password · request password reset                                  │
-  └──────────────────────────────────────────────────────────────────────────────────┘
-        │
-        ▼
-  "The request passes through the Express middleware chain:"
-  "  Auth (JWT) → RBAC (role check) → Validation (Joi) → the controller"
-        │
-        ▼
-  "The controller performs the MAIN database write"
-        │
-        ▼
-  ┌──────────────────── SHARED AUDIT LOGGER STEP ───────────────────────────┐
-  │                                                                          │
-  │   "auditLog({ actor_id, actor_role, action, entity_type, entity_id,     │
-  │                ip, metadata })"                                          │
-  │                                                                          │
-  │   FIELD GUIDE (show as a small annotated card next to the step):        │
-  │     actor_id      → the acting user's user_id (UUID)                     │
-  │     actor_role    → admin | doctor | patient                              │
-  │     action        → a SNAKE_CASE verb, e.g. BOOKING_ACCEPTED,            │
-  │                     USER_ROLE_CHANGED, DOCTOR_APPROVED,                   │
-  │                     DELETION_APPROVED, QUEUE_DECLINED                     │
-  │     entity_type   → the kind of record affected, e.g. booking_item       │
-  │     entity_id     → the id of the affected record                        │
-  │     ip            → the actor's IP address                               │
-  │     metadata      → JSON: the old value, the new value, and the reason  │
-  │                     (for example the rejection reason)                   │
-  │     created_at    → automatic timestamp                                  │
-  │                                                                          │
-  │   "The audit_logs collection is INSERT-ONLY — it is never updated or     │
-  │    deleted. A dedicated admin page reads it; no endpoint can modify it."  │
-  │                                                                          │
-  └──────────────────────────────────────────────────────────────────────────┘
-        │
-        ▼
-  "One document is inserted into the audit_logs collection"
-        │
-        ▼
-  "The Audit Log admin page reads it"
-  "GET /api/admin/audit-logs?action&actor_id&actor_role&entity_type&from&to&page&limit"
-  "GET /api/admin/audit-logs/:id   (shows the full metadata JSON, expandable)"
-        │
-        ▼
-  (End)
-
-IMPORTANT CALLOUT (soft red strip):
-  "The audit log records the ADMIN'S ACTION, never the patient's medical content.
-   For a deletion request the entry contains the decision and the reason, but not the
-   patient's report, diagnosis, or prescription text."
-
-SUGGESTED ACTION VERB LIST (show as a light reference panel to the right):
-  LOGIN · LOGIN_FAILED · USER_CREATED · USER_UPDATED · USER_ROLE_CHANGED · USER_SUSPENDED ·
-  USER_ACTIVATED · USER_DELETED · USER_RESTORED · FORCE_LOGOUT · PASSWORD_RESET_SENT ·
-  TWO_FA_RESET · DOCTOR_APPROVED · DOCTOR_REJECTED · BOOKING_ACCEPTED · BOOKING_REJECTED ·
-  BOOKING_UPDATED · BOOKING_CANCELLED · BOOKING_DELETED · BOOKING_ITEM_UPDATED ·
-  BOOKING_ITEM_DELETED · SERVICE_APPROVED · SERVICE_REJECTED · DELETION_APPROVED ·
-  DELETION_REJECTED
-
-STYLE: teal action boxes, a distinct dark panel for the shared audit logger step, purple
-for the read path, orange for the reference verb list, orthogonal connectors, monospace
-field names, no SMS anything.
-```
-
----
-
-## 14. Mongoose vs Previous Architecture (Migration Note Diagram)
+## 13. Mongoose vs Previous Architecture (Migration Note Diagram)
 
 **Diagram Prompt**
 
@@ -1348,7 +1227,7 @@ BEFORE PANEL (left half) — drawn as RETIRED:
       • "TypeORM"  — box labeled "DataSource · entity decorators · getRepository()"
       • "MySQL 8" — box labeled "Relational tables · SQL schema · mysql2 driver"
       • "Relational Model" — box listing: users, doctor_portfolios, doctor_works, bookings,
-        booking_items, reviews, reports, audit_logs, deletion_requests, refresh_tokens
+        booking_items, reviews, reports, deletion_requests, refresh_tokens
         (drawn as a classic table/grid with column rows)
       • A small note: "The models were written as Mongoose schemas, so TypeORM could never
         load them — the DataSource and the entities were incompatible"
@@ -1359,11 +1238,11 @@ AFTER PANEL (right half) — drawn as CURRENT:
   - Everything is SOLID with the project colour scheme:
       • "Mongoose 9"  — SOLID BLUE box, labeled "mongoose.connect() · retry logic ·
         connection events · schemas with enums, indexes, soft delete"
-      • "MongoDB 7"   — SOLID GREEN box, labeled "Document database · 11 collections ·
+      • "MongoDB 7"   — SOLID GREEN box, labeled "Document database · 10 collections ·
         ObjectId references · TTL indexes"
-      • "Document Model" — SOLID TEAL box listing the SAME 11 collections as document
+      • "Document Model" — SOLID TEAL box listing the SAME 10 collections as document
         collections: users, doctor_portfolios, doctor_works, bookings, booking_items,
-        reviews, reports, audit_logs, deletion_requests, refresh_tokens, notifications
+        reviews, reports, deletion_requests, refresh_tokens, notifications
         (drawn as document cards, each with a rounded corner and key/value rows)
   - Highlight the NEW collection in the AFTER panel: "notifications" gets a distinct
     accent colour and a small "NEW" badge
@@ -1379,7 +1258,7 @@ CENTRE ARROW between the two panels:
     "• .env.example switched from MySQL variables to MONGO_URI"
 
 BOTTOM STRIP (soft gray, full width):
-  "WHAT DID NOT CHANGE — all 11 Mongoose model files, the Express + EJS architecture,
+  "WHAT DID NOT CHANGE — all 10 Mongoose model files, the Express + EJS architecture,
    the roles and permissions model, the notification policy, and every business rule."
 
 STYLE: rounded rectangles, the BEFORE panel deliberately desaturated and crossed out,

@@ -2,8 +2,6 @@
 ## 2. Flow Documentation
 
 Same template as the team's flow doc: the admin journey, one flow per task, then numbered scenarios.  
-**Every write action in these flows also creates an Audit Log entry.**
-
 ---
 
 ### 2.1 Admin flow (main journey)
@@ -47,8 +45,6 @@ Admin يسجل دخول بحساب (/auth/login)
     ├── يوافق على خدمة
     ├── يرفض خدمة
     └── يعدل خدمة
-    ↓
-يذهب لسجل العمليات (/admin/audit-log)
     ↓
 يذهب لطلبات الحذف (/admin/deletion-requests)
     ↓
@@ -102,8 +98,6 @@ GET /api/admin/doctors/pending
         verification = rejected + إيميل بالسبب
             ↓
         الدكتور يرجع يرفع Medical ID جديد → pending (نفس الحساب)
-    ↓
-كل قرار يتسجل في Audit Log
 ```
 
 ---
@@ -149,7 +143,7 @@ Admin يفتح /admin/users/:id
     ├── Reset 2FA → POST .../reset-2fa (يمسح secure_key ويقفل enable_2fa)
     └── Suspend / Activate → PATCH .../status
     ↓
-كل زر بيطلب confirm وبيتسجل في Audit Log
+كل زر بيطلب confirm
 ```
 
 ---
@@ -237,8 +231,6 @@ Admin يفتح /admin/deletion-requests
     ↓
     ├── Approve → إشعار للمريض → حذف نهائي أو إخفاء هوية
     └── Reject (سبب) → إشعار للمريض
-    ↓
-تتسجل في Audit Log (من غير بيانات المريض الحساسة)
 ```
 
 ---

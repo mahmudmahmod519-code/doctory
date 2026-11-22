@@ -29,8 +29,7 @@ Expected behavior:
 4. Change status to `confirmed`.
 5. Notify the patient.
 6. Add the patient to the waiting queue.
-7. Record the action in the Audit Log.
-8. Return the updated booking status.
+7. Return the updated booking status.
 
 ## Reject Booking
 `PATCH /api/doctor/bookings/:bookingId/reject`
@@ -42,8 +41,7 @@ Expected behavior:
 4. Change status to `rejected`.
 5. Notify the patient.
 6. Free the appointment slot.
-7. Record the action in the Audit Log.
-8. Return the updated booking status.
+7. Return the updated booking status.
 
 ## Security and Validation
 - `401`: unauthenticated request.
@@ -54,7 +52,7 @@ Expected behavior:
 - Derive Doctor identity from authentication; do not trust a client-supplied `doctorId`.
 - Enforce record-level authorization, not only role checks.
 - Never return full patient account data, password hashes, or authentication secrets.
-- Keep status updates, slot handling, queue insertion, and audit logging consistent; use a transaction where applicable.
+- Keep status updates, slot handling, and queue insertion consistent; use a transaction where applicable.
 - Define notification-failure behavior with the team.
 
 ## Illustrative Request

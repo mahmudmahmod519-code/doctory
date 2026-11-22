@@ -72,7 +72,7 @@ Doctor Login
 - Use fictional sample data.
 
 ## Privacy and Role Restrictions
-- Do not show Admin-only controls such as approving other doctors or viewing the system-wide Audit Log.
+- Do not show Admin-only controls such as approving other doctors.
 - Do not expose the patient's full account data.
 - AI results are suggestions, not final diagnoses.
 

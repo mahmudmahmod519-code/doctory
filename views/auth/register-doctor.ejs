@@ -1,1 +1,51 @@
-<!-- TODO: implement doctor registration view -->
+<%# GET /auth/register/doctor — API: POST /api/auth/register/doctor (multipart, medical_id file ≤5MB) → pending admin approval %>
+<% const field = (id, label, type, ph, extra) => `<div class="flex flex-col gap-1.5"><label for="${id}" class="font-label-md text-label-md font-semibold">${label}</label><input id="${id}" name="${id}" type="${type}" placeholder="${ph || ''}" ${extra || ''} class="field" /><p data-error-for="${id}" class="hidden font-label-sm text-label-sm text-error"></p></div>`; %>
+<%- include('../layouts/main-layout', { part: 'top', pageTitle: 'تسجيل طبيب جديد' }) %>
+<section class="w-full max-w-2xl" data-animate="scale"><div class="bg-surface-container-lowest shadow-xl rounded-2xl p-6 sm:p-9 relative overflow-hidden"><div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-l from-primary-container via-secondary-fixed-dim to-secondary"></div>
+  <div id="done" class="hidden text-center flex-col items-center gap-4 py-6"><div class="w-20 h-20 rounded-full bg-secondary-container/40 text-secondary flex items-center justify-center"><span class="material-symbols-outlined icon-fill text-[40px]">hourglass_top</span></div><h1 class="font-headline-md text-headline-md font-extrabold">تم استلام طلبك</h1><p class="font-body-md text-body-md text-on-surface-variant max-w-md">سيراجع فريقنا بطاقة النقابة، وسنُعلمك بالبريد فور تفعيل حسابك. بعد التفعيل سيُطلب منك التحقق بخطوتين.</p><a href="/" class="h-11 px-6 rounded-lg bg-primary-container text-on-primary font-label-md inline-flex items-center">العودة للرئيسية</a></div>
+  <div id="wrap"><div class="text-center mb-6"><h1 class="font-headline-md text-headline-md font-extrabold">إنشاء حساب طبيب</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">يُفعَّل الحساب بعد مراجعة بطاقة النقابة.</p></div>
+  <form id="reg" class="grid sm:grid-cols-2 gap-4" novalidate>
+    <div id="form-alert" role="alert" class="hidden sm:col-span-2 p-3 rounded-lg bg-error-container text-on-error-container font-body-md text-body-md"></div>
+    <%- field('name', 'الاسم الكامل', 'text', 'د. أحمد محمد', 'required') %><%- field('email', 'البريد الإلكتروني', 'email', 'doctor@clinic.com', 'dir="ltr" required') %>
+    <%- field('phone', 'رقم الهاتف', 'tel', '01012345678', 'dir="ltr" required') %><%- field('specialty', 'التخصص', 'text', 'باطنة، أسنان...', 'required') %>
+    <%- field('syndicate_number', 'رقم القيد بالنقابة', 'text', '', 'dir="ltr" required') %><%- field('working_hours', 'مواعيد العمل (اختياري)', 'text', 'السبت–الخميس 5م–9م') %>
+    <%- field('password', 'كلمة المرور', 'password', '6 أحرف على الأقل', 'autocomplete="new-password" required') %><%- field('confirmPassword', 'تأكيد كلمة المرور', 'password', '', 'autocomplete="new-password" required') %>
+    <div class="sm:col-span-2"><label for="medical_id" class="font-label-md text-label-md font-semibold block mb-1.5">صورة بطاقة النقابة (مطلوبة)</label>
+      <label for="medical_id" class="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-outline-variant hover:border-primary-container cursor-pointer transition-colors"><span class="material-symbols-outlined text-primary text-[28px]">upload_file</span><span><span id="fname" class="block font-body-md text-body-md font-semibold">اضغط لاختيار الملف</span><span class="block font-label-sm text-label-sm text-on-surface-variant">JPG أو PNG أو WEBP أو PDF — حتى 5MB</span></span></label>
+      <input id="medical_id" name="medical_id" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" class="sr-only" /><p data-error-for="medical_id" class="hidden font-label-sm text-label-sm text-error mt-1"></p></div>
+    <label class="sm:col-span-2 flex items-start gap-2.5 cursor-pointer"><input type="checkbox" name="terms" class="mt-0.5 w-[18px] h-[18px] accent-primary-container" /><span class="font-body-md text-body-md text-on-surface-variant">أوافق على <a href="/terms" target="_blank" class="text-primary hover:underline">الشروط والأحكام</a> و<a href="/privacy" target="_blank" class="text-primary hover:underline">سياسة الخصوصية</a></span></label>
+    <p data-error-for="terms" class="hidden sm:col-span-2 font-label-sm text-label-sm text-error"></p>
+    <button id="submit" type="submit" class="sm:col-span-2 h-12 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md">إرسال طلب الانضمام</button>
+  </form>
+  <p class="text-center font-body-md text-body-md text-on-surface-variant mt-5">لديك حساب؟ <a href="/auth/login" class="text-primary font-bold hover:underline">تسجيل الدخول</a></p></div>
+</div></section>
+<%- include('../layouts/main-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, setBusy, showFieldErrors } = Doctory;
+  const form = document.getElementById('reg'), btn = document.getElementById('submit'), box = document.getElementById('form-alert'), file = document.getElementById('medical_id');
+  file.addEventListener('change', () => { document.getElementById('fname').textContent = file.files[0]?.name || 'اضغط لاختيار الملف'; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault(); box.classList.add('hidden');
+    const fd = new FormData(form), g = (k) => String(fd.get(k) || '').trim(), er = {}, f = file.files[0];
+    if (g('name').length < 3) er.name = 'أدخل اسمك الكامل';
+    if (!/^\S+@\S+\.\S+$/.test(g('email'))) er.email = 'بريد إلكتروني غير صحيح';
+    if (!/^(\+20|0)?1[0125]\d{8}$/.test(g('phone').replace(/\s/g, ''))) er.phone = 'أدخل رقم موبايل مصري صحيح';
+    if (!g('specialty')) er.specialty = 'أدخل التخصص';
+    if (!g('syndicate_number')) er.syndicate_number = 'أدخل رقم القيد';
+    if (g('password').length < 6) er.password = '6 أحرف على الأقل';
+    if (g('password') !== g('confirmPassword')) er.confirmPassword = 'كلمتا المرور غير متطابقتين';
+    if (!f) er.medical_id = 'ارفع صورة بطاقة النقابة'; else if (f.size > 5 * 1024 * 1024) er.medical_id = 'الحد الأقصى 5MB';
+    if (!fd.get('terms')) er.terms = 'يجب الموافقة على الشروط للمتابعة';
+    showFieldErrors(form, er); if (Object.keys(er).length) return;
+    fd.delete('terms'); fd.set('email', g('email').toLowerCase());
+    setBusy(btn, true, 'جارٍ الإرسال...');
+    try { await api('POST', '/api/auth/register/doctor', fd, { redirectOn401: false });
+      document.getElementById('wrap').classList.add('hidden'); const d = document.getElementById('done'); d.classList.remove('hidden'); d.classList.add('flex'); }
+    catch (err) { setBusy(btn, false); if (err.payload?.errors) showFieldErrors(form, err.payload.errors);
+      if (err.status === 409) showFieldErrors(form, { email: 'هذا البريد مسجّل بالفعل' }); else { box.textContent = err.message; box.classList.remove('hidden'); } }
+  });
+});
+</script>
+</body>
+</html>

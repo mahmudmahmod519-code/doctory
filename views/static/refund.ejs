@@ -1,1 +1,10 @@
-<!-- TODO: implement refund policy view -->
+<%- include('../layouts/guest-layout', { part: 'top', active: 'refund', pageTitle: 'سياسة الاسترداد' }) %>
+<section class="max-w-3xl mx-auto px-4 lg:px-gutter-desktop py-12 lg:py-16">
+  <header class="mb-8" data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">سياسة الاسترداد</h1></header>
+  <div class="bg-surface-container-lowest rounded-2xl shadow-card p-6 sm:p-8 flex flex-col gap-5 font-body-md text-body-md text-on-surface-variant" data-animate="fade-up">
+<p class="text-tertiary font-label-md">نسخة أولية — تحتاج مراجعة قانونية قبل الإطلاق.</p><p>رسوم الكشف تُسدَّد للعيادة مباشرة وفق سياستها. عند إلغاء الحجز قبل الموعد لا تترتب أي رسوم عبر المنصة. للاستفسار عن أي مبلغ مدفوع تواصل معنا عبر صفحة اتصل بنا.</p>
+  </div>
+</section>
+<%- include('../layouts/guest-layout', { part: 'bottom' }) %>
+</body>
+</html>

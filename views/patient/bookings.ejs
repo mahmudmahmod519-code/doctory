@@ -1,0 +1,44 @@
+<%# GET /patient/bookings — APIs: GET /api/patient/bookings?status&page, PATCH /api/patient/bookings/:id/cancel %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'bookings', pageTitle: 'حجوزاتي' }) %>
+<header data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">حجوزاتي</h1></header>
+<div class="flex flex-wrap gap-2" id="tabs"></div>
+<div id="list" class="flex flex-col gap-3" aria-live="polite"></div>
+<nav id="pager" class="flex justify-center gap-2"></nav>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, statusChip, stateBlock, errorBlock, toast } = Doctory;
+  const TABS = [['', 'الكل'], ['pending,accepted', 'القادمة'], ['completed', 'المكتملة'], ['cancelled,rejected', 'الملغاة']];
+  let status = '', page = 1; const LIMIT = 8;
+  const list = document.getElementById('list');
+  const card = (b) => html`<article class="bg-surface-container-lowest rounded-xl shadow-card p-4 flex flex-wrap items-center gap-4" data-stagger-item>
+    <div class="num w-14 h-14 rounded-xl bg-primary-fixed text-primary flex items-center justify-center font-extrabold text-xl">${fmt.ticket(b.queue_number)}</div>
+    <div class="min-w-0 flex-1"><p class="font-title-md text-title-md font-bold">${b.doctor}</p><p class="font-body-md text-body-md text-on-surface-variant">${b.specialty} · ${fmt.shortDate(b.date)} · <span class="num">${fmt.time(b.time)}</span></p></div>
+    ${statusChip(b.status)}
+    <div class="flex gap-2">
+      ${['pending', 'accepted'].includes(b.status) ? raw(html`<a href="/patient/waiting-queue?booking=${b.booking_item_id}" class="h-10 px-4 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md inline-flex items-center">تابع</a><button data-cancel="${b.booking_id}" class="h-10 px-4 rounded-lg bg-surface-container-low text-error font-label-md text-label-md">إلغاء</button>`) : ''}
+      ${b.report_id ? raw(html`<a href="/patient/medical-report?report=${b.report_id}" class="h-10 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center">التقرير</a>`) : ''}
+    </div></article>`;
+  function tabs() { document.getElementById('tabs').innerHTML = TABS.map(([v, l]) => `<button data-s="${v}" class="px-4 py-2 rounded-full font-label-md text-label-md ${v === status ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low hover:bg-surface-container'}">${l}</button>`).join(''); }
+  async function load() {
+    tabs(); list.innerHTML = '<div class="skeleton h-20 rounded-xl"></div>'.repeat(3);
+    try {
+      const { data } = await api('GET', '/api/patient/bookings', null, { query: { ...(status ? { status } : {}), page, limit: LIMIT } });
+      Doctory.render(list, data.items.length ? data.items.map(card).join('') : stateBlock({ icon: 'event_note', title: 'لا توجد حجوزات', text: 'احجز أول موعد لك الآن.', action: '<a href="/doctors" class="mt-1 h-11 px-5 rounded-lg bg-primary-container text-on-primary font-label-md inline-flex items-center">ابحث عن طبيب</a>' }));
+      const pages = Math.ceil(data.total / LIMIT);
+      document.getElementById('pager').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) => `<button data-p="${i + 1}" class="num w-10 h-10 rounded-lg ${i + 1 === page ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low'}">${i + 1}</button>`).join('') : '';
+    } catch (e) { list.innerHTML = errorBlock(e, 'load'); }
+  }
+  window.load = load;
+  document.getElementById('tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-s]'); if (b) { status = b.dataset.s; page = 1; load(); } });
+  document.getElementById('pager').addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (b) { page = +b.dataset.p; load(); } });
+  list.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-cancel]'); if (!b) return;
+    const r = await Doctory.confirm({ title: 'إلغاء الحجز', message: 'هل تريد إلغاء هذا الموعد؟', confirmText: 'نعم، إلغاء', danger: true, withReason: true }); if (!r.ok) return;
+    try { await api('PATCH', '/api/patient/bookings/' + b.dataset.cancel + '/cancel', { reason: r.reason }); toast('تم إلغاء الحجز', 'success'); load(); } catch (err) { toast(err.message, 'error'); }
+  });
+  load();
+});
+</script>
+</body>
+</html>

@@ -1,1 +1,50 @@
-<!-- TODO: implement patient registration view -->
+<%# GET /auth/register/patient — API: POST /api/auth/register/patient (JSON) → /patient/dashboard %>
+<% const field = (id, label, type, ph, extra) => `<div class="flex flex-col gap-1.5"><label for="${id}" class="font-label-md text-label-md font-semibold">${label}</label><input id="${id}" name="${id}" type="${type}" placeholder="${ph || ''}" ${extra || ''} class="field" /><p data-error-for="${id}" class="hidden font-label-sm text-label-sm text-error"></p></div>`; %>
+<%- include('../layouts/main-layout', { part: 'top', pageTitle: 'تسجيل مريض جديد' }) %>
+<section class="w-full max-w-lg" data-animate="scale"><div class="bg-surface-container-lowest shadow-xl rounded-2xl p-6 sm:p-9 relative overflow-hidden"><div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-l from-primary-container via-secondary-fixed-dim to-secondary"></div>
+  <div class="text-center mb-6"><h1 class="font-headline-md text-headline-md font-extrabold">إنشاء حساب مريض</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">بياناتك محمية ولن تُشارك مع أي جهة.</p></div>
+  <form id="reg" class="grid sm:grid-cols-2 gap-4" novalidate>
+    <div id="form-alert" role="alert" class="hidden sm:col-span-2 p-3 rounded-lg bg-error-container text-on-error-container font-body-md text-body-md"></div>
+    <div class="sm:col-span-2"><%- field('name', 'الاسم الكامل', 'text', 'أحمد محمد', 'autocomplete="name" required') %></div>
+    <div class="sm:col-span-2"><%- field('email', 'البريد الإلكتروني', 'email', 'name@example.com', 'dir="ltr" autocomplete="email" required') %></div>
+    <%- field('phone', 'رقم الهاتف', 'tel', '01012345678', 'dir="ltr" inputmode="tel" autocomplete="tel" required') %>
+    <div class="flex flex-col gap-1.5"><label for="address" class="font-label-md text-label-md font-semibold">المدينة</label><select id="address" name="address" class="field"><option value="">اختر المدينة</option><% ['القاهرة','الجيزة','الإسكندرية','المنصورة','طنطا','أسيوط','أخرى'].forEach(function(c){ %><option><%= c %></option><% }) %></select></div>
+    <div class="relative"><%- field('password', 'كلمة المرور', 'password', '6 أحرف على الأقل', 'autocomplete="new-password" required') %><button type="button" data-toggle-password="password" aria-label="إظهار كلمة المرور" class="absolute left-2.5 top-[34px] w-8 h-8 text-on-surface-variant flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">visibility</span></button></div>
+    <%- field('confirmPassword', 'تأكيد كلمة المرور', 'password', '', 'autocomplete="new-password" required') %>
+    <label class="sm:col-span-2 flex items-start gap-2.5 cursor-pointer"><input type="checkbox" name="terms" class="mt-0.5 w-[18px] h-[18px] accent-primary-container" /><span class="font-body-md text-body-md text-on-surface-variant">أوافق على <a href="/terms" target="_blank" class="text-primary hover:underline">الشروط والأحكام</a> و<a href="/privacy" target="_blank" class="text-primary hover:underline">سياسة الخصوصية</a></span></label>
+    <p data-error-for="terms" class="hidden sm:col-span-2 font-label-sm text-label-sm text-error"></p>
+    <button id="submit" type="submit" class="sm:col-span-2 h-12 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md">إنشاء الحساب</button>
+  </form>
+  <p class="text-center font-body-md text-body-md text-on-surface-variant mt-5">لديك حساب؟ <a href="/auth/login" class="text-primary font-bold hover:underline">تسجيل الدخول</a></p>
+</div></section>
+<%- include('../layouts/main-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, setBusy, showFieldErrors, formToObject } = Doctory;
+  const form = document.getElementById('reg'), btn = document.getElementById('submit'), box = document.getElementById('form-alert');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault(); box.classList.add('hidden');
+    const d = formToObject(form), er = {};
+    if (!d.name || d.name.length < 3) er.name = 'أدخل اسمك الكامل';
+    if (!/^\S+@\S+\.\S+$/.test(d.email || '')) er.email = 'بريد إلكتروني غير صحيح';
+    if (!/^(\+20|0)?1[0125]\d{8}$/.test((d.phone || '').replace(/\s/g, ''))) er.phone = 'أدخل رقم موبايل مصري صحيح';
+    if (!d.password || d.password.length < 6) er.password = '6 أحرف على الأقل';
+    if (d.password !== d.confirmPassword) er.confirmPassword = 'كلمتا المرور غير متطابقتين';
+    if (!d.terms) er.terms = 'يجب الموافقة على الشروط للمتابعة';
+    showFieldErrors(form, er); if (Object.keys(er).length) return;
+    setBusy(btn, true, 'جارٍ إنشاء الحساب...');
+    try {
+      const { terms, ...body } = d; body.email = body.email.toLowerCase();
+      await api('POST', '/api/auth/register/patient', body, { redirectOn401: false });
+      location.href = '/patient/dashboard?flash=' + encodeURIComponent('أهلاً بك في Doctory!');
+    } catch (err) {
+      setBusy(btn, false);
+      if (err.payload?.errors) showFieldErrors(form, err.payload.errors);
+      if (err.status === 409) showFieldErrors(form, { email: 'هذا البريد مسجّل بالفعل' });
+      else { box.textContent = err.message; box.classList.remove('hidden'); }
+    }
+  });
+});
+</script>
+</body>
+</html>

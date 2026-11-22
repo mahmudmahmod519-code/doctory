@@ -1,1 +1,56 @@
-<!-- TODO: implement guest navbar view -->
+<%#
+  Public navbar (home, doctors directory, static pages).
+  Shows login/register for guests, or a dashboard shortcut when logged in.
+  Locals: login (bool), currentUser, active ('home' | 'doctors' | 'about' | 'faq' | 'contact')
+%>
+<%
+  const _logged = typeof login !== 'undefined' && login && typeof currentUser !== 'undefined' && currentUser;
+  const _dash = _logged ? ({ admin: '/admin/dashboard', doctor: '/doctor/dashboard' }[currentUser.role] || '/patient/dashboard') : '/auth/login';
+  const _act = typeof active !== 'undefined' ? active : '';
+  const _links = [
+    { key: 'home', href: '/', label: 'الرئيسية' },
+    { key: 'doctors', href: '/doctors', label: 'الأطباء' },
+    { key: 'about', href: '/about-us', label: 'من نحن' },
+    { key: 'faq', href: '/faq', label: 'الأسئلة الشائعة' },
+    { key: 'contact', href: '/contact-us', label: 'اتصل بنا' }
+  ];
+%>
+<header class="sticky top-0 z-40 bg-surface-container-lowest/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+  <div class="max-w-7xl mx-auto h-16 px-4 lg:px-8 flex items-center justify-between gap-4">
+    <a href="/" class="flex items-center gap-2.5 shrink-0">
+      <span class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined icon-fill">local_hospital</span></span>
+      <span class="font-headline-sm text-headline-sm font-extrabold text-primary">دكتوري <span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Doctory</span></span>
+    </a>
+    <nav class="hidden md:flex items-center gap-1" aria-label="التنقل الرئيسي">
+      <% _links.forEach(function (l) { const on = l.key === _act; %>
+        <a href="<%= l.href %>" <% if (on) { %>aria-current="page"<% } %> class="px-3.5 py-2 rounded-lg font-label-md text-label-md transition-colors <%= on ? 'text-primary bg-primary-fixed/60 font-bold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low' %>"><%= l.label %></a>
+      <% }) %>
+    </nav>
+    <div class="hidden md:flex items-center gap-2">
+      <% if (_logged) { %>
+        <a href="<%= _dash %>" class="h-10 px-4 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-bold flex items-center gap-2 hover:opacity-95"><span class="material-symbols-outlined text-[18px]">dashboard</span>لوحة التحكم</a>
+      <% } else { %>
+        <a href="/auth/login" class="h-10 px-4 rounded-lg border border-outline-variant text-on-surface font-label-md text-label-md flex items-center hover:bg-surface-container-low">تسجيل الدخول</a>
+        <a href="/auth/signup-options" class="h-10 px-4 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-bold flex items-center hover:opacity-95 shadow-sm">إنشاء حساب</a>
+      <% } %>
+    </div>
+    <button type="button" data-menu-toggle aria-expanded="false" aria-controls="guest-menu" class="md:hidden w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center" aria-label="القائمة">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+  </div>
+  <div id="guest-menu" data-menu class="hidden md:hidden border-t border-surface-variant bg-surface-container-lowest px-4 pb-4">
+    <nav class="flex flex-col py-2">
+      <% _links.forEach(function (l) { %>
+        <a href="<%= l.href %>" class="px-3 py-3 rounded-lg font-body-md text-body-md <%= l.key === _act ? 'text-primary font-bold' : 'text-on-surface' %> hover:bg-surface-container-low"><%= l.label %></a>
+      <% }) %>
+    </nav>
+    <div class="grid grid-cols-2 gap-2">
+      <% if (_logged) { %>
+        <a href="<%= _dash %>" class="col-span-2 h-11 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-bold flex items-center justify-center">لوحة التحكم</a>
+      <% } else { %>
+        <a href="/auth/login" class="h-11 rounded-lg border border-outline-variant font-label-md text-label-md flex items-center justify-center">تسجيل الدخول</a>
+        <a href="/auth/signup-options" class="h-11 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-bold flex items-center justify-center">إنشاء حساب</a>
+      <% } %>
+    </div>
+  </div>
+</header>

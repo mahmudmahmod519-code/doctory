@@ -60,13 +60,6 @@
 // Table: title, doctor, price, duration, status.
 // Actions: approve, reject (reason required), edit, soft delete.
 
-// GET /admin/audit-log
-// Render audit log page.
-// Read-only operation log.
-// Filters: action, actor, entity type, date range.
-// Table: time, actor, action, entity, IP.
-// Expandable metadata JSON. No edit/delete.
-
 // GET /admin/deletion-requests
 // Render deletion requests page.
 // Table: patient name (masked), requested at, status.
@@ -108,7 +101,7 @@
 // PATCH /api/admin/doctors/:id/approve
 // Approve doctor verification.
 // Sets verification=approved, users.status=active.
-// Sends email to doctor. Creates Audit Log entry.
+// Sends email to doctor.
 // 409 if doctor is not pending.
 
 // PATCH /api/admin/doctors/:id/reject
@@ -233,11 +226,6 @@
 
 // DELETE /api/admin/services/:id
 // Soft delete doctor service.
-
-// GET /api/admin/audit-logs
-// Read audit log entries.
-// Query: action, actor_id, actor_role, entity_type, entity_id, from, to, page, limit.
-// Read-only. No write operations allowed.
 
 // GET /api/admin/deletion-requests
 // List data deletion requests.

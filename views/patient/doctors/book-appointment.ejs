@@ -1,1 +1,72 @@
-<!-- TODO: implement book appointment view -->
+<%# GET /doctors/:id/book — needs login. APIs: GET /api/public/doctors/:id, GET /api/bookings/slots?portfolio_id&date, POST /api/patient/bookings → /patient/waiting-queue %>
+<%- include('../../layouts/patient-layout', { part: 'top', active: 'doctors', pageTitle: 'حجز موعد' }) %>
+<header data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">احجز موعدك</h1><p id="who" class="font-body-md text-body-md text-on-surface-variant mt-1">&nbsp;</p></header>
+<form id="book" class="grid lg:grid-cols-3 gap-6" novalidate>
+  <div class="lg:col-span-2 flex flex-col gap-6">
+    <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold mb-3">1. اختر الخدمة</h2><div id="services" class="grid sm:grid-cols-2 gap-3"><div class="skeleton h-24 rounded-xl"></div></div></section>
+    <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold mb-3">2. اختر اليوم</h2><div id="days" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div></section>
+    <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold mb-3">3. اختر الوقت</h2><div id="slots" class="grid grid-cols-2 sm:grid-cols-4 gap-3" aria-live="polite"></div></section>
+    <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><label for="notes" class="font-title-lg text-title-lg font-bold block mb-3">ملاحظات للطبيب (اختياري)</label><textarea id="notes" name="notes" rows="3" maxlength="500" class="field" placeholder="الأعراض أو أي معلومة تهمّ الطبيب"></textarea></section>
+  </div>
+  <aside class="bg-surface-container-lowest rounded-2xl shadow-card p-6 h-fit lg:sticky lg:top-24 flex flex-col gap-4" data-animate="fade-up">
+    <h2 class="font-title-lg text-title-lg font-bold">ملخص الحجز</h2>
+    <dl id="summary" class="flex flex-col gap-3 font-body-md text-body-md"></dl>
+    <button id="submit" type="submit" disabled class="h-12 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md disabled:opacity-50 disabled:shadow-none inline-flex items-center justify-center gap-2">تأكيد الحجز<span class="material-symbols-outlined text-[20px]">check_circle</span></button>
+    <p class="font-label-sm text-label-sm text-on-surface-variant">سيصلك إشعار فور موافقة الطبيب، ويمكنك متابعة دورك مباشرة.</p>
+  </aside>
+</form>
+<%- include('../../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, html, raw, fmt, toast, setBusy } = Doctory;
+  const id = '<%= typeof doctorId !== "undefined" ? doctorId : "" %>' || location.pathname.split('/').filter(Boolean).slice(-2, -1)[0];
+  const $ = (s) => document.querySelector(s);
+  const st = { service: null, date: null, slot: null, doctor: null };
+
+  function summary() {
+    const row = (k, v) => html`<div class="flex justify-between gap-3"><dt class="text-on-surface-variant">${k}</dt><dd class="font-bold text-left">${v}</dd></div>`;
+    $('#summary').innerHTML = [row('الطبيب', st.doctor?.doctor_name || '—'), row('الخدمة', st.service?.title || '—'), row('اليوم', st.date ? fmt.date(st.date) : '—'), row('الوقت', st.slot ? fmt.time(st.slot) : '—'), row('السعر', st.service ? fmt.money(st.service.price) : '—')].join('');
+    $('#submit').disabled = !(st.service && st.date && st.slot);
+  }
+  function days() {
+    $('#days').innerHTML = Array.from({ length: 10 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; }).map((d) => {
+      const iso = fmt.isoDate(d);
+      return `<button type="button" data-day="${iso}" class="shrink-0 w-[72px] py-3 rounded-xl bg-surface-container-low hover:bg-surface-container text-center transition-colors"><span class="block font-label-sm text-label-sm text-on-surface-variant">${d.toLocaleDateString('ar-EG', { weekday: 'short' })}</span><span class="num block text-xl font-extrabold">${d.getDate()}</span><span class="block font-label-sm text-label-sm text-on-surface-variant">${d.toLocaleDateString('ar-EG', { month: 'short' })}</span></button>`;
+    }).join('');
+  }
+  function mark(sel, attr, val) { document.querySelectorAll(sel).forEach((b) => { const on = b.dataset[attr] === val; b.classList.toggle('bg-primary-container', on); b.classList.toggle('text-on-primary', on); b.setAttribute('aria-pressed', on); }); }
+  async function loadSlots() {
+    const box = $('#slots'); box.innerHTML = '<div class="skeleton h-14 rounded-xl"></div>'.repeat(4);
+    try {
+      const { data } = await api('GET', '/api/bookings/slots', null, { query: { portfolio_id: id, date: st.date } });
+      const slots = data.slots || [];
+      box.innerHTML = slots.length ? slots.map((s) => `<button type="button" data-slot="${s.appointment_time}" ${s.remaining <= 0 ? 'disabled' : ''} class="py-3 rounded-xl bg-surface-container-low hover:bg-surface-container disabled:opacity-40 disabled:line-through text-center transition-colors"><span class="num block font-bold">${fmt.time(s.appointment_time)}</span><span class="block font-label-sm text-label-sm ${s.remaining <= 0 ? '' : 'text-on-surface-variant'}">${s.remaining <= 0 ? 'مكتمل' : 'متبقي ' + s.remaining}</span></button>`).join('') : '<p class="col-span-full text-on-surface-variant">لا توجد مواعيد متاحة في هذا اليوم.</p>';
+    } catch (e) { box.innerHTML = `<p class="col-span-full text-error">${Doctory.esc(e.message)}</p>`; }
+  }
+
+  days(); summary();
+  $('#days').addEventListener('click', (e) => { const b = e.target.closest('[data-day]'); if (!b) return; st.date = b.dataset.day; st.slot = null; mark('[data-day]', 'day', st.date); summary(); loadSlots(); });
+  $('#slots').addEventListener('click', (e) => { const b = e.target.closest('[data-slot]'); if (!b || b.disabled) return; st.slot = b.dataset.slot; mark('[data-slot]', 'slot', st.slot); summary(); });
+  $('#services').addEventListener('click', (e) => { const b = e.target.closest('[data-service]'); if (!b) return; st.service = st.services.find((s) => s.service_id === b.dataset.service); mark('[data-service]', 'service', b.dataset.service); summary(); });
+
+  try {
+    const { data } = await api('GET', '/api/public/doctors/' + encodeURIComponent(id));
+    st.doctor = data.doctor; st.services = data.services || [];
+    $('#who').textContent = `${st.doctor.doctor_name} — ${st.doctor.specialty}`;
+    $('#services').innerHTML = st.services.map((s) => html`<button type="button" data-service="${s.service_id}" class="text-right p-4 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors"><span class="block font-title-md text-title-md font-bold">${s.title}</span><span class="block font-body-md text-body-md opacity-80">${s.description || ''}</span><span class="num block font-extrabold mt-1">${fmt.money(s.price)}</span></button>`).join('');
+    if (st.services.length === 1) $('#services button').click();
+    summary();
+  } catch (e) { $('#services').innerHTML = Doctory.errorBlock(e); }
+
+  $('#book').addEventListener('submit', async (e) => {
+    e.preventDefault(); const btn = $('#submit'); setBusy(btn, true, 'جارٍ الحجز...');
+    try {
+      const { data, message } = await api('POST', '/api/patient/bookings', { portfolio_id: id, service_id: st.service.service_id, type: st.service.type, appointment_date: st.date, appointment_time: st.slot, notes: $('#notes').value.trim() });
+      toast(message || 'تم إرسال طلب الحجز', 'success');
+      setTimeout(() => { location.href = '/patient/waiting-queue?booking=' + encodeURIComponent(data.booking?.booking_item_id || ''); }, 700);
+    } catch (err) { setBusy(btn, false); summary(); toast(err.status === 409 ? 'هذا الموعد اكتمل، اختر وقتاً آخر' : err.message, 'error'); if (err.status === 409) loadSlots(); }
+  });
+});
+</script>
+</body>
+</html>

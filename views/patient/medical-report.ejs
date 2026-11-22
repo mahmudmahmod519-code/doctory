@@ -1,1 +1,36 @@
-<!-- TODO: implement medical report view -->
+<%# GET /patient/medical-report?report=<id> — API: GET /api/patient/reports/:id ; download: GET /api/reports/:id/download. Admin never sees the content. %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'history', pageTitle: 'التقرير الطبي' }) %>
+<div class="flex items-center justify-between gap-3 print:hidden" data-animate="fade-up">
+  <a href="/patient/medical-history" class="inline-flex items-center gap-1 font-label-md text-label-md text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>السجل الطبي</a>
+  <div class="flex gap-2"><button id="print" class="h-11 px-5 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">print</span>طباعة</button><a id="dl" href="#" class="h-11 px-5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">download</span>تحميل PDF</a></div>
+</div>
+<div id="r-root" class="max-w-3xl mx-auto w-full"><div class="skeleton h-96 rounded-2xl"></div></div>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory;
+  const id = new URLSearchParams(location.search).get('report') || '<%= typeof reportId !== "undefined" && reportId ? reportId : "" %>';
+  const root = document.getElementById('r-root');
+  document.getElementById('print').onclick = () => window.print();
+  document.getElementById('dl').href = '/api/reports/' + encodeURIComponent(id) + '/download';
+  const block = (t, v) => html`<section class="py-4 border-t border-surface-container-high"><h2 class="font-title-md text-title-md font-bold text-primary mb-1">${t}</h2><p class="font-body-md text-body-md whitespace-pre-line">${v || '—'}</p></section>`;
+  async function load() {
+    try {
+      const { data } = await api('GET', '/api/patient/reports/' + encodeURIComponent(id)); const r = data.report;
+      const meds = (r.medicines || []).map((m) => html`<tr class="border-t border-surface-container-high"><td class="py-2.5 pl-3 font-bold" dir="ltr">${m.name}</td><td class="py-2.5 pl-3">${m.dosage}</td><td class="py-2.5 pl-3">${m.frequency}</td><td class="py-2.5">${m.duration}</td></tr>`).join('');
+      render(root, html`<article class="bg-surface-container-lowest rounded-2xl shadow-card p-6 sm:p-8 print:shadow-none" data-animate="fade-up">
+        <header class="flex flex-wrap justify-between gap-4 pb-4"><div><p class="font-label-md text-label-md text-on-surface-variant">التقرير الطبي</p><h1 class="font-headline-md text-headline-md font-extrabold">${r.doctor.name}</h1><p class="font-body-md text-body-md text-on-surface-variant">${r.doctor.title || r.doctor.specialty}${r.doctor.syndicate_number ? ' · نقابة رقم ' + r.doctor.syndicate_number : ''}</p></div>
+          <div class="text-left"><p class="font-label-md text-label-md text-on-surface-variant">تاريخ الزيارة</p><p class="font-bold">${fmt.date(r.created_at)}</p><p class="font-label-md text-label-md text-on-surface-variant mt-1">المريض: ${r.patient?.name || ''}</p></div></header>
+        ${raw(block('الأعراض', r.symptoms))}${raw(block('التشخيص', r.diagnosis))}
+        <section class="py-4 border-t border-surface-container-high"><h2 class="font-title-md text-title-md font-bold text-primary mb-2">الروشتة</h2>
+          ${(r.medicines || []).length ? raw(html`<div class="overflow-x-auto"><table class="w-full text-right font-body-md text-body-md"><thead class="text-on-surface-variant font-label-md"><tr><th class="pb-2">الدواء</th><th class="pb-2">الجرعة</th><th class="pb-2">التكرار</th><th class="pb-2">المدة</th></tr></thead><tbody>${raw(meds)}</tbody></table></div>`) : raw('<p>—</p>')}</section>
+        ${raw(block('ملاحظات وتوصيات الطبيب', r.description))}
+        <footer class="pt-4 border-t border-surface-container-high flex flex-wrap gap-3 justify-between items-center print:hidden"><p class="font-label-sm text-label-sm text-on-surface-variant">هذا التقرير سري ومخصّص للمريض فقط.</p><a href="/patient/review/${r.booking_item_id}?doctor=${r.doctor.portfolio_id}" class="h-10 px-4 rounded-lg bg-secondary-container/40 text-on-secondary-container font-label-md text-label-md inline-flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">star</span>قيّم هذه الزيارة</a></footer>
+      </article>`);
+    } catch (err) { root.innerHTML = errorBlock(err.status === 404 ? Object.assign(err, { message: 'التقرير غير موجود أو لا يخصّ حسابك' }) : err, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

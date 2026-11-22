@@ -1,1 +1,32 @@
-<!-- TODO: implement patient layout view -->
+<%#
+  Patient dashboard shell (sidebar + top bar + footer). EJS has no block inheritance, so every page includes
+  this file twice:
+
+    include('../layouts/patient-layout', { part: 'top', active: 'dashboard' })
+      ... page content ...
+    include('../layouts/patient-layout', { part: 'bottom' })
+    <script> page script </script>      (optional, after the bottom part)
+
+  Locals: part ('top' | 'bottom'), active (sidebar key), pageTitle, currentUser
+%>
+<% if (part === 'top') { %>
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="bg-surface text-on-surface min-h-screen antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary-container focus:text-white focus:rounded-lg">تخطَّ إلى المحتوى</a>
+  <%- include('../partials/sidebar-patient') %>
+  <div class="lg:pr-72 flex flex-col min-h-screen">
+    <%- include('../partials/navbar-patient') %>
+    <main id="main" class="w-full pt-16 flex-1">
+      <div class="max-w-7xl mx-auto px-4 lg:px-gutter-desktop py-6 lg:py-8 flex flex-col gap-6 lg:gap-8">
+<% } else { %>
+      </div>
+    </main>
+    <%- include('../partials/footer', { variant: 'compact' }) %>
+  </div>
+  <%- include('../partials/modal-confirm') %>
+  <%- include('../partials/flash-messages') %>
+<% } %>

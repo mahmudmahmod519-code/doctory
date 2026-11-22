@@ -1,1 +1,83 @@
-<!-- TODO: implement doctor search view -->
+<%# GET /doctors — API: GET /api/public/doctors?q&specialty&city&available&min_rating&sort&page&limit. Guest accessible. %>
+<%- include('../../layouts/guest-layout', { part: 'top', active: 'doctors', pageTitle: 'ابحث عن طبيب' }) %>
+
+<section class="max-w-7xl mx-auto px-4 lg:px-gutter-desktop py-8 lg:py-12 flex flex-col gap-6">
+  <header data-animate="fade-up">
+    <h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">ابحث عن طبيبك</h1>
+    <p class="font-body-md text-body-md text-on-surface-variant mt-1">أطباء موثّقون، مواعيد حقيقية، وطابور مباشر.</p>
+  </header>
+
+  <form id="filters" class="bg-surface-container-lowest rounded-2xl shadow-card p-4 grid gap-3 md:grid-cols-[1fr_auto_auto_auto_auto]" role="search">
+    <div class="relative"><span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">search</span>
+      <input name="q" type="search" class="field pr-11" placeholder="اسم الطبيب أو التخصص" aria-label="بحث" value="<%= typeof q !== 'undefined' ? q : '' %>" /></div>
+    <select name="specialty" class="field" aria-label="التخصص"><option value="">كل التخصصات</option><option value="pediatrics">أطفال</option><option value="dermatology">جلدية</option><option value="cardiology">قلب</option><option value="dentistry">أسنان</option><option value="ophthalmology">عيون</option><option value="internal">باطنة</option></select>
+    <select name="city" class="field" aria-label="المدينة"><option value="">كل المدن</option><option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>المنصورة</option></select>
+    <select name="sort" class="field" aria-label="الترتيب"><option value="">الأنسب</option><option value="rating">الأعلى تقييماً</option><option value="price">الأقل سعراً</option></select>
+    <label class="h-12 px-4 rounded-lg bg-surface-container-low inline-flex items-center gap-2 cursor-pointer font-label-md text-label-md"><input type="checkbox" name="available" value="true" class="accent-primary-container w-4 h-4" />متاح اليوم</label>
+  </form>
+
+  <p id="count" class="font-label-md text-label-md text-on-surface-variant" aria-live="polite"></p>
+  <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  <nav id="pager" class="flex justify-center gap-2" aria-label="الصفحات"></nav>
+</section>
+
+<%- include('../../layouts/guest-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, stateBlock, errorBlock, render } = Doctory;
+  const form = document.getElementById('filters'), grid = document.getElementById('grid'), pager = document.getElementById('pager'), count = document.getElementById('count');
+  const url = new URLSearchParams(location.search);
+  [...form.elements].forEach((el) => { if (el.name && url.has(el.name)) { el.type === 'checkbox' ? (el.checked = true) : (el.value = url.get(el.name)); } });
+  let page = +url.get('page') || 1, seq = 0, t;
+  const LIMIT = 9;
+
+  const card = (d) => html`
+    <article class="group bg-surface-container-lowest rounded-2xl shadow-card hover:shadow-lift transition-shadow p-5 flex flex-col gap-4" data-stagger-item data-tilt>
+      <div class="flex gap-3.5">
+        <div class="w-16 h-16 rounded-2xl bg-secondary-container/40 text-secondary flex items-center justify-center shrink-0 overflow-hidden">
+          ${d.profile_image ? raw(html`<img src="${d.profile_image}" alt="" class="w-full h-full object-cover" loading="lazy" />`) : raw('<span class="material-symbols-outlined icon-fill text-[32px]">stethoscope</span>')}
+        </div>
+        <div class="min-w-0">
+          <h2 class="font-title-md text-title-md font-bold truncate"><a href="/doctors/${d.portfolio_id}" class="hover:text-primary">${d.doctor_name}</a></h2>
+          <p class="font-body-md text-body-md text-on-surface-variant truncate">${d.specialty}${d.title ? ' · ' + d.title : ''}</p>
+          <p class="mt-1 flex items-center gap-1 font-label-md text-label-md"><span class="material-symbols-outlined icon-fill text-[16px] text-warning">star</span><span class="num font-bold">${d.average_rating}</span><span class="text-on-surface-variant num">(${d.reviews_count ?? 0})</span></p>
+        </div>
+      </div>
+      <ul class="font-body-md text-body-md text-on-surface-variant flex flex-col gap-1.5">
+        ${d.address ? raw(html`<li class="flex gap-2"><span class="material-symbols-outlined text-[18px]">location_on</span><span class="truncate">${d.address}</span></li>`) : ''}
+        <li class="flex gap-2"><span class="material-symbols-outlined text-[18px]">payments</span>الكشف يبدأ من <span class="num font-bold text-on-surface">${fmt.money(d.min_price)}</span></li>
+      </ul>
+      ${d.live_queue ? raw(html`<div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary-container/30 text-on-secondary-container font-label-md text-label-md"><span class="live-dot text-secondary"></span>الطابور الآن <span class="num font-bold">#${d.live_queue.current_number}</span> · ينتظر <span class="num">${d.live_queue.waiting}</span></div>`) : ''}
+      <div class="flex gap-2 mt-auto">
+        <a href="/doctors/${d.portfolio_id}/book" class="flex-1 h-11 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md inline-flex items-center justify-center gap-2 hover:opacity-95">احجز الآن</a>
+        <a href="/doctors/${d.portfolio_id}" class="h-11 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center justify-center">الملف</a>
+      </div>
+    </article>`;
+
+  async function load() {
+    const my = ++seq;
+    const f = new FormData(form); const p = new URLSearchParams();
+    for (const [k, v] of f.entries()) if (v) p.set(k, v);
+    history.replaceState(null, '', '?' + new URLSearchParams({ ...Object.fromEntries(p), ...(page > 1 ? { page } : {}) }));
+    grid.setAttribute('aria-busy', 'true');
+    try {
+      const { data } = await api('GET', '/api/public/doctors', null, { query: { ...Object.fromEntries(p), page, limit: LIMIT }, redirectOn401: false });
+      if (my !== seq) return;
+      const items = data.items || [];
+      count.textContent = items.length ? `${data.total} طبيب` : '';
+      if (!items.length) render(grid, '<div class="col-span-full">' + stateBlock({ icon: 'search_off', title: 'لا يوجد أطباء مطابقون', text: 'جرّب تغيير كلمات البحث أو إزالة بعض الفلاتر.' }) + '</div>');
+      else render(grid, items.map(card).join(''));
+      const pages = Math.ceil(data.total / LIMIT);
+      pager.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) => `<button type="button" data-page="${i + 1}" class="num w-10 h-10 rounded-lg font-label-md ${i + 1 === page ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low hover:bg-surface-container'}" ${i + 1 === page ? 'aria-current="page"' : ''}>${i + 1}</button>`).join('') : '';
+    } catch (err) { if (my === seq) { count.textContent = ''; grid.innerHTML = '<div class="col-span-full">' + errorBlock(err, 'load') + '</div>'; } }
+    finally { grid.removeAttribute('aria-busy'); }
+  }
+  window.load = load;
+  form.addEventListener('submit', (e) => e.preventDefault());
+  form.addEventListener('input', () => { page = 1; clearTimeout(t); t = setTimeout(load, 250); });
+  pager.addEventListener('click', (e) => { const b = e.target.closest('[data-page]'); if (b) { page = +b.dataset.page; load(); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
+  load();
+});
+</script>
+</body>
+</html>

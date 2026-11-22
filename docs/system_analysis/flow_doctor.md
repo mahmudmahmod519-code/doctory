@@ -19,11 +19,9 @@ flowchart TD
     D -- Accept --> E[Status: confirmed]
     E --> F[Notify patient]
     F --> G[Add patient to queue]
-    G --> H[Record action in Audit Log]
     D -- Reject --> I[Status: rejected]
     I --> J[Notify patient]
     J --> K[Free appointment slot]
-    K --> H
 ```
 This follows the README's documented booking workflow.
 
@@ -54,7 +52,6 @@ AI output remains a suggestion. The physician retains authority over diagnosis, 
 - New booking starts as `pending`.
 - Accept changes status to `confirmed`, notifies the patient, and adds the patient to the queue.
 - Reject changes status to `rejected`, notifies the patient, and frees the slot.
-- Every accept/reject action is recorded in the Audit Log.
 - Doctor cannot access the patient's full account data.
 - Admin handles physician ID verification and activation/rejection.
 

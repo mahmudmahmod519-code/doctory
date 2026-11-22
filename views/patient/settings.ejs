@@ -1,1 +1,59 @@
-<!-- TODO: implement patient settings view -->
+<%# GET /user/settings (and /patient/settings) — APIs: PATCH /api/user/profile, POST /api/user/upload-image, POST /api/user/2fa/enable|disable, DELETE /api/user/account %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'settings', pageTitle: 'الإعدادات' }) %>
+<% const u = (typeof user !== 'undefined' && user) || (typeof currentUser !== 'undefined' && currentUser) || {}; %>
+<header data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الإعدادات</h1></header>
+<div class="grid lg:grid-cols-3 gap-6">
+  <form id="profile" class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6 grid sm:grid-cols-2 gap-4" novalidate data-animate="fade-up">
+    <h2 class="sm:col-span-2 font-title-lg text-title-lg font-bold">البيانات الشخصية</h2>
+    <% [['name','الاسم','text',u.name],['email','البريد الإلكتروني','email',u.email],['phone','رقم الهاتف','tel',u.phone],['birth_date','تاريخ الميلاد','date',u.birth_date ? new Date(u.birth_date).toISOString().slice(0,10) : '']].forEach(function(f){ %>
+      <div class="flex flex-col gap-1.5"><label for="<%= f[0] %>" class="font-label-md text-label-md font-semibold"><%= f[1] %></label><input id="<%= f[0] %>" name="<%= f[0] %>" type="<%= f[2] %>" value="<%= f[3] || '' %>" class="field" <%= f[2]==='email'||f[2]==='tel' ? 'dir=ltr' : '' %> /><p data-error-for="<%= f[0] %>" class="hidden font-label-sm text-label-sm text-error"></p></div>
+    <% }) %>
+    <div class="sm:col-span-2 flex flex-col gap-1.5"><label for="address" class="font-label-md text-label-md font-semibold">العنوان</label><input id="address" name="address" value="<%= u.address || '' %>" class="field" /><p data-error-for="address" class="hidden font-label-sm text-label-sm text-error"></p></div>
+    <div class="sm:col-span-2"><button id="save" type="submit" class="h-12 px-8 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md">حفظ التغييرات</button></div>
+  </form>
+  <div class="flex flex-col gap-6">
+    <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up">
+      <h2 class="font-title-lg text-title-lg font-bold">التحقق بخطوتين</h2>
+      <p class="font-body-md text-body-md text-on-surface-variant">حالياً: <strong id="tfa-state" class="<%= u.enable_2fa ? 'text-secondary' : 'text-on-surface' %>"><%= u.enable_2fa ? 'مفعّل' : 'غير مفعّل' %></strong></p>
+      <div id="qr" class="hidden text-center"><p class="font-label-sm text-label-sm text-on-surface-variant">أدخل هذا المفتاح في تطبيق المصادقة (Google Authenticator أو Authy):</p><code id="secret" dir="ltr" class="num block my-2 p-2 rounded-lg bg-surface-container-low break-all select-all"></code><a id="otp-link" href="#" class="font-label-md text-label-md text-primary hover:underline">فتح في تطبيق المصادقة</a></div>
+      <button id="tfa" class="h-11 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md"><%= u.enable_2fa ? 'إيقاف التحقق بخطوتين' : 'تفعيل التحقق بخطوتين' %></button>
+    </section>
+    <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-3" data-animate="fade-up">
+      <h2 class="font-title-lg text-title-lg font-bold text-error">منطقة الخطر</h2>
+      <p class="font-body-md text-body-md text-on-surface-variant">حذف الحساب يخفي بياناتك ويُنهي جلستك فوراً.</p>
+      <button id="del" class="h-11 rounded-lg bg-error-container text-on-error-container font-label-md text-label-md">حذف حسابي</button>
+    </section>
+  </div>
+</div>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, toast, setBusy, formToObject, showFieldErrors } = Doctory;
+  let tfaOn = <%= u.enable_2fa ? 'true' : 'false' %>;
+  document.getElementById('profile').addEventListener('submit', async (e) => {
+    e.preventDefault(); const form = e.currentTarget, btn = document.getElementById('save');
+    const body = Object.fromEntries(Object.entries(formToObject(form)).filter(([, v]) => v !== ''));
+    showFieldErrors(form, {}); setBusy(btn, true, 'جارٍ الحفظ...');
+    try { await api('PATCH', '/api/user/profile', body); toast('تم حفظ بياناتك', 'success'); }
+    catch (err) { if (err.payload?.errors) showFieldErrors(form, err.payload.errors); else if (err.status === 409) showFieldErrors(form, { email: 'هذا البريد مستخدم بالفعل' }); toast(err.status === 409 ? 'هذا البريد مستخدم بالفعل' : err.message, 'error'); }
+    finally { setBusy(btn, false); }
+  });
+  document.getElementById('tfa').addEventListener('click', async (e) => {
+    const btn = e.currentTarget; setBusy(btn, true, 'لحظة...');
+    try {
+      if (!tfaOn) { const { data } = await api('POST', '/api/user/2fa/enable'); tfaOn = true;
+        document.getElementById('qr').classList.remove('hidden'); document.getElementById('secret').textContent = data.secret;
+        document.getElementById('otp-link').href = data.otpauth_url; }
+      else { await api('POST', '/api/user/2fa/disable'); tfaOn = false; document.getElementById('qr').classList.add('hidden'); }
+      document.getElementById('tfa-state').textContent = tfaOn ? 'مفعّل' : 'غير مفعّل'; btn.textContent = tfaOn ? 'إيقاف التحقق بخطوتين' : 'تفعيل التحقق بخطوتين';
+      toast(tfaOn ? 'تم تفعيل التحقق بخطوتين' : 'تم إيقاف التحقق بخطوتين', 'success');
+    } catch (err) { toast(err.message, 'error'); } finally { btn.disabled = false; }
+  });
+  document.getElementById('del').addEventListener('click', async () => {
+    const r = await Doctory.confirm({ title: 'حذف الحساب', message: 'سيتم إخفاء بياناتك وتسجيل خروجك. لا يمكن التراجع عن هذا الإجراء بنفسك.', confirmText: 'نعم، احذف حسابي', danger: true }); if (!r.ok) return;
+    try { await api('DELETE', '/api/user/account'); location.href = '/?flash=' + encodeURIComponent('تم حذف حسابك'); } catch (err) { toast(err.message, 'error'); }
+  });
+});
+</script>
+</body>
+</html>

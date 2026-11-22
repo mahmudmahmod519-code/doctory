@@ -1,1 +1,5 @@
-<!-- TODO: implement notification bell view -->
+<%# Bell with the live unread badge (filled by core.js from GET /api/notifications/unread-count). %>
+<a href="/patient/notifications" class="relative w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors" aria-label="الإشعارات">
+  <span class="material-symbols-outlined text-[20px]">notifications</span>
+  <span data-unread-badge class="hidden absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-on-error ring-2 ring-surface-container-lowest flex items-center justify-center text-[10px] font-bold num"></span>
+</a>

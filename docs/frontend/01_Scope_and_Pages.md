@@ -7,7 +7,7 @@
 
 ## 0. Scope, Assumptions and DB Gaps
 
-This doc is built on the real schema (7 tables, MySQL). Five things the leader asked for (soft delete, audit log, doctor verification, waiting time, force logout) have no table or column yet; the second table lists what to add.
+This doc is built on the real schema (7 tables, MySQL). Four things the leader asked for (soft delete, doctor verification, waiting time, force logout) have no table or column yet; the second table lists what to add.
 
 ### What the docs you sent tell us
 
@@ -44,7 +44,6 @@ This doc is built on the real schema (7 tables, MySQL). Five things the leader a
 |-----------------------------|------------------------------------------------------------------------|-----|
 | Medical ID review           | New table `doctor_verifications`: `id`, `user_id`, `medical_id_image`, `status` (pending / approved / rejected), `rejection_reason`, `reviewed_by`, `reviewed_at`, `submitted_at` | No column stores the syndicate ID today; a table also keeps resubmission history |
 | Soft delete + restore       | Add `deleted_at`, `deleted_by` to `users`, `bookings`, `booking_items`, `doctor_works` | Admin delete / restore, and the "removed" group in the Waiting List |
-| Audit log                   | New table `audit_logs`: `id`, `actor_id`, `action`, `entity_type`, `entity_id`, `ip`, `metadata` (JSON), `created_at`; insert-only | README requires it; not in the schema |
 | Data-deletion requests      | New table `deletion_requests`: `id`, `user_id`, `status`, `reason`, `reviewed_by`, `reviewed_at`, `created_at` | Law 151/2020; proposed |
 | Waiting time                | `booking_items`: add `completed_at`; add `cancelled` to the status CHECK | Actual wait for completed patients, and a clear "cancelled" state |
 | Force logout                | A refresh-token store (Redis or a `refresh_tokens` table)             | The Auth spec revokes refresh tokens but nothing stores them |
@@ -66,7 +65,7 @@ On every admin page:
 
 Pages the admin shares with everyone (Login, 2FA Verification, Forgot / Reset Password, Settings with Change Password) are defined in the Auth spec and not repeated.
 
-**Pages count: 16 admin pages**
+**Pages count: 15 admin pages**
 
 | #  | Page                              | Path                              |
 |----|-----------------------------------|-----------------------------------|
@@ -83,9 +82,8 @@ Pages the admin shares with everyone (Login, 2FA Verification, Forgot / Reset Pa
 | 11 | Booking Details                   | `/admin/bookings/:id`             |
 | 12 | Waiting List                      | `/admin/waiting-list`             |
 | 13 | Doctor Services                   | `/admin/services`                 |
-| 14 | Audit Log                         | `/admin/audit-log`                |
-| 15 | Deletion Requests (proposed)      | `/admin/deletion-requests`        |
-| 16 | Errors 403 / 404 / 500            | -                                 |
+| 14 | Deletion Requests (proposed)      | `/admin/deletion-requests`        |
+| 15 | Errors 403 / 404 / 500            | -                                 |
 
 > In paths, `:id` of users, doctors and services is the external UUID (`user_id`, `portfolio_id`, `work_id`). Bookings and booking items have no UUID column, so their paths use the INT `id`.
 
@@ -102,13 +100,12 @@ STATE: { currentUser, login, status }
 APIS:
   - GET /api/admin/stats?from&to
   - GET /api/admin/doctors/pending?limit=5
-  - GET /api/admin/audit-logs?limit=10
 UI COMPONENTS:
   - Stat cards (patients, doctors by status, bookings today, waiting patients today, pending verifications, pending deletion requests)
   - Bookings-per-day chart + date range
   - Bookings by type and status chart
   - Top specialties chart
-  - Latest 5 pending doctors, latest 10 audit events
+  - Latest 5 pending doctors
 STATES:
   - loading: skeleton cards
   - empty: "لا توجد بيانات بعد"
@@ -118,7 +115,6 @@ ACTIONS: تغيير الفترة الزمنية، الضغط على أي كار�
 REDIRECTS:
   - /admin/doctors/verification (pending card)
   - /admin/waiting-list (waiting card)
-  - /admin/audit-log (view all)
 ```
 
 ---
@@ -304,7 +300,7 @@ UI COMPONENTS: account card (role, status, email verified, 2FA enabled, last log
 STATES:
   - loading: skeleton
   - error: "فشل في تحميل المستخدم"
-ACTIONS: كل أزرار التحكم بتطلب confirm وبتتسجل في Audit Log
+ACTIONS: كل أزرار التحكم بتطلب confirm
 REDIRECTS: /admin/users (بعد الحذف)
 ```
 
@@ -407,28 +403,7 @@ REDIRECTS: /admin/doctors/:id
 
 ---
 
-### 1.14 Audit Log
-
-```
-PAGE: Audit Log
-PATH: /admin/audit-log
-ROLE: admin
-PURPOSE: سجل كل العمليات الحساسة (قراءة فقط)
-STATE: { currentUser, login, status }
-APIS:
-  - GET /api/admin/audit-logs?action&actor_id&actor_role&entity_type&from&to&page&limit
-  - GET /api/admin/audit-logs/:id
-UI COMPONENTS: filters, table (time, actor, action, entity, ip), expandable metadata JSON
-STATES:
-  - empty: "لا توجد عمليات"
-  - error: "فشل في تحميل السجل"
-ACTIONS: فلترة، فتح التفاصيل (لا تعديل ولا حذف)
-REDIRECTS: -
-```
-
----
-
-### 1.15 Deletion Requests (proposed)
+### 1.14 Deletion Requests (proposed)
 
 ```
 PAGE: Deletion Requests
@@ -449,7 +424,7 @@ REDIRECTS: -
 
 ---
 
-### 1.16 Error pages
+### 1.15 Error pages
 
 ```
 PAGE: 403 / 404 / 500

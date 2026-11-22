@@ -1,1 +1,34 @@
-<!-- TODO: implement submit review view -->
+<%# GET /patient/review/:bookingItemId — API: POST /api/patient/reviews { portfolio_id, booking_item_id, rating, feedback } (409 = already reviewed) %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'history', pageTitle: 'قيّم زيارتك' }) %>
+<section class="max-w-xl mx-auto w-full bg-surface-container-lowest rounded-2xl shadow-lift p-8 flex flex-col gap-5" data-animate="scale">
+  <div class="text-center"><h1 class="font-headline-md text-headline-md font-extrabold">كيف كانت زيارتك؟</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">رأيك يساعد المرضى الآخرين في اختيار الطبيب المناسب.</p></div>
+  <form id="rv" class="flex flex-col gap-5" novalidate>
+    <div class="flex justify-center gap-1.5" role="radiogroup" aria-label="التقييم" id="stars" dir="ltr">
+      <% for (let i = 1; i <= 5; i++) { %><button type="button" role="radio" aria-checked="false" aria-label="<%= i %> من 5" data-v="<%= i %>" class="w-12 h-12 rounded-lg text-outline-variant hover:scale-110 transition-transform"><span class="material-symbols-outlined text-[40px]">star</span></button><% } %>
+    </div>
+    <p data-error-for="rating" class="hidden text-center font-label-md text-label-md text-error"></p>
+    <div><label for="feedback" class="font-label-md text-label-md font-semibold block mb-1.5">شاركنا تجربتك (اختياري)</label><textarea id="feedback" name="feedback" rows="4" maxlength="1000" class="field" placeholder="التعامل، الانتظار، وضوح الشرح..."></textarea></div>
+    <button id="send" type="submit" class="h-12 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md">إرسال التقييم</button>
+  </form>
+</section>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const bookingItemId = '<%= typeof bookingItemId !== "undefined" ? bookingItemId : "" %>' || location.pathname.split('/').pop();
+  let rating = 0, portfolioId = new URLSearchParams(location.search).get('doctor') || '';
+  const stars = [...document.querySelectorAll('#stars button')];
+  const paint = (n) => stars.forEach((b) => { const on = +b.dataset.v <= n; b.classList.toggle('text-warning', on); b.classList.toggle('text-outline-variant', !on); b.setAttribute('aria-checked', +b.dataset.v === rating); b.firstElementChild.classList.toggle('icon-fill', on); });
+  stars.forEach((b) => { b.addEventListener('click', () => { rating = +b.dataset.v; paint(rating); }); b.addEventListener('mouseenter', () => paint(+b.dataset.v)); b.addEventListener('mouseleave', () => paint(rating)); });
+  document.getElementById('rv').addEventListener('submit', async (e) => {
+    e.preventDefault(); const form = e.currentTarget;
+    if (!rating) return Doctory.showFieldErrors(form, { rating: 'اختر عدد النجوم أولاً' });
+    const btn = document.getElementById('send'); Doctory.setBusy(btn, true, 'جارٍ الإرسال...');
+    try {
+      await Doctory.api('POST', '/api/patient/reviews', { portfolio_id: portfolioId, booking_item_id: bookingItemId, rating, feedback: document.getElementById('feedback').value.trim() });
+      Doctory.toast('شكراً لتقييمك!', 'success'); setTimeout(() => (location.href = '/patient/dashboard'), 900);
+    } catch (err) { Doctory.setBusy(btn, false); Doctory.toast(err.status === 409 ? 'لقد قيّمت هذه الزيارة من قبل' : err.message, err.status === 409 ? 'info' : 'error'); }
+  });
+});
+</script>
+</body>
+</html>

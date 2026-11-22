@@ -1,1 +1,12 @@
-<!-- TODO: implement FAQ view -->
+<%- include('../layouts/guest-layout', { part: 'top', active: 'faq', pageTitle: 'الأسئلة الشائعة' }) %>
+<section class="max-w-3xl mx-auto px-4 lg:px-gutter-desktop py-12 lg:py-16">
+  <header class="mb-8" data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">الأسئلة الشائعة</h1></header>
+  <div class="flex flex-col gap-3" data-stagger>
+    <% [['كيف أحجز موعداً؟','ابحث عن الطبيب، اختر الخدمة واليوم والوقت، ثم أكّد الحجز. يصلك إشعار عند موافقة الطبيب.'],['كيف أتابع دوري؟','من صفحة "قائمة الانتظار" ترى رقمك والرقم الحالي ومرضى قبلك، وتُحدَّث تلقائياً.'],['ماذا يحدث إن لم أستطع الحضور في دوري؟','يمكنك تأجيل الدور عدداً محدوداً من المرات، وبعدها يُلغى الحجز تلقائياً.'],['هل بياناتي الطبية آمنة؟','نعم، لا يراها إلا أنت وطبيبك المعالج، ولا يطّلع عليها المشرفون.'],['كيف أنضم كطبيب؟','سجّل حساب طبيب وارفع بطاقة النقابة، وسنفعّل حسابك بعد المراجعة.']].forEach(function(q){ %>
+    <details data-stagger-item class="group bg-surface-container-lowest rounded-xl shadow-card p-5"><summary class="cursor-pointer list-none flex items-center justify-between gap-3 font-title-md text-title-md font-bold"><%= q[0] %><span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span></summary><p class="font-body-md text-body-md text-on-surface-variant mt-3"><%= q[1] %></p></details>
+    <% }) %>
+  </div>
+</section>
+<%- include('../layouts/guest-layout', { part: 'bottom' }) %>
+</body>
+</html>

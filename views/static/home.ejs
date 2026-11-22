@@ -1,1 +1,49 @@
-<!-- TODO: implement home view -->
+<%- include('../layouts/guest-layout', { part: 'top', active: 'home', pageTitle: 'الرئيسية' }) %>
+<section class="relative overflow-hidden bg-gradient-to-b from-primary-fixed/40 to-surface">
+  <div class="max-w-7xl mx-auto px-4 lg:px-gutter-desktop py-14 lg:py-24 grid lg:grid-cols-2 gap-12 items-center">
+    <div class="flex flex-col gap-6" data-stagger>
+      <span data-stagger-item class="inline-flex w-fit items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/40 text-on-secondary-container font-label-md text-label-md"><span class="live-dot text-secondary"></span>طابور مباشر · بدون انتظار في العيادة</span>
+      <h1 data-stagger-item class="font-display-xl text-4xl lg:text-6xl font-extrabold leading-tight text-on-surface">احجز عند طبيبك، <span class="text-primary">وتابع دورك من البيت</span></h1>
+      <p data-stagger-item class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">Doctory تربطك بأطباء موثّقين في مصر. اختر الموعد، وسنخبرك قبل دورك بوقت كافٍ — فلا تضيّع ساعات في صالة الانتظار.</p>
+      <form data-stagger-item action="/doctors" method="get" class="flex flex-col sm:flex-row gap-3 bg-surface-container-lowest rounded-2xl shadow-lift p-2.5" role="search">
+        <div class="relative flex-1"><span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span><input name="q" type="search" class="field pr-11 !bg-transparent" placeholder="ابحث باسم الطبيب أو التخصص" aria-label="بحث" /></div>
+        <button class="h-12 px-8 rounded-xl bg-primary-container text-on-primary font-title-md text-title-md shadow-md hover:shadow-lift transition-all">ابحث</button>
+      </form>
+      <div data-stagger-item class="flex flex-wrap gap-x-6 gap-y-2 font-label-md text-label-md text-on-surface-variant"><span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined icon-fill text-secondary text-[18px]">verified</span>أطباء موثّقون بالنقابة</span><span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined icon-fill text-secondary text-[18px]">lock</span>بياناتك الطبية سرّية</span></div>
+    </div>
+    <div class="relative hidden lg:block" data-animate="scale" aria-hidden="true">
+      <div class="bg-surface-container-lowest rounded-3xl shadow-modal p-6 flex flex-col gap-4 max-w-sm mx-auto" data-float>
+        <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-full bg-secondary-container/40 text-secondary flex items-center justify-center"><span class="material-symbols-outlined icon-fill">stethoscope</span></div><div><p class="font-title-md text-title-md font-bold">د. طارق حسن</p><p class="font-label-md text-label-md text-on-surface-variant">أطفال وحديثي الولادة</p></div></div>
+        <div class="grid grid-cols-2 gap-3 text-center"><div class="rounded-xl bg-primary-container text-on-primary p-3"><p class="font-label-sm">رقمك</p><p class="num text-4xl font-extrabold">#06</p></div><div class="rounded-xl bg-secondary-container/40 text-on-secondary-container p-3"><p class="font-label-sm">يُخدَم الآن</p><p class="num text-4xl font-extrabold">#04</p></div></div>
+        <div class="h-2.5 rounded-full bg-surface-container-high overflow-hidden"><div class="h-full w-2/3 rounded-full bg-gradient-to-l from-secondary to-primary-container" data-progress="66"></div></div>
+        <p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-2"><span class="live-dot text-secondary"></span>تقريباً 18 دقيقة حتى دورك</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 lg:px-gutter-desktop py-16">
+  <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold text-center mb-10" data-animate="fade-up">كيف تعمل Doctory؟</h2>
+  <div class="grid md:grid-cols-3 gap-6" data-stagger>
+    <% [['search','١. اختر طبيبك','قارن التخصصات والأسعار والتقييمات الحقيقية من مرضى زاروا الطبيب فعلاً.'],['event_available','٢. احجز موعدك','اختر اليوم والوقت المتاح، ويصلك تأكيد الطبيب فور الموافقة.'],['hourglass_top','٣. تابع دورك','شاهد رقمك والرقم الحالي ومرضى قبلك، ونُنبّهك عند اقتراب دورك.']].forEach(function(s){ %>
+    <article data-stagger-item data-tilt class="bg-surface-container-lowest rounded-2xl shadow-card p-7 flex flex-col gap-3"><div class="w-14 h-14 rounded-2xl bg-primary-fixed text-primary flex items-center justify-center"><span class="material-symbols-outlined text-[28px]"><%= s[0] %></span></div><h3 class="font-title-lg text-title-lg font-bold"><%= s[1] %></h3><p class="font-body-md text-body-md text-on-surface-variant"><%= s[2] %></p></article>
+    <% }) %>
+  </div>
+</section>
+
+<section class="bg-surface-container-low">
+  <div class="max-w-7xl mx-auto px-4 lg:px-gutter-desktop py-16 grid sm:grid-cols-3 gap-6 text-center" data-stagger>
+    <div data-stagger-item><p class="num text-5xl font-extrabold text-primary" data-count="500" data-suffix="+">500+</p><p class="font-body-md text-body-md text-on-surface-variant mt-1">طبيب موثّق</p></div>
+    <div data-stagger-item><p class="num text-5xl font-extrabold text-primary" data-count="25000" data-suffix="+">25,000+</p><p class="font-body-md text-body-md text-on-surface-variant mt-1">حجز ناجح</p></div>
+    <div data-stagger-item><p class="num text-5xl font-extrabold text-primary" data-count="18" data-suffix=" د">18 د</p><p class="font-body-md text-body-md text-on-surface-variant mt-1">متوسط الانتظار المُوفَّر</p></div>
+  </div>
+</section>
+
+<section class="max-w-4xl mx-auto px-4 py-16 text-center flex flex-col items-center gap-5" data-animate="fade-up">
+  <h2 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">جاهز تحجز أول موعد؟</h2>
+  <p class="font-body-lg text-body-lg text-on-surface-variant">أنشئ حسابك في أقل من دقيقة وابدأ.</p>
+  <div class="flex flex-wrap justify-center gap-3"><a href="/auth/register/patient" class="h-12 px-8 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md hover:shadow-lift inline-flex items-center">أنشئ حساب مريض</a><a href="/auth/register/doctor" class="h-12 px-8 rounded-lg bg-surface-container-low hover:bg-surface-container font-title-md text-title-md inline-flex items-center">أنا طبيب</a></div>
+</section>
+<%- include('../layouts/guest-layout', { part: 'bottom' }) %>
+</body>
+</html>

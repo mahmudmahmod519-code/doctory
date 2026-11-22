@@ -1,1 +1,25 @@
-<!-- TODO: implement guest layout view -->
+<%#
+  Public shell (guest navbar + full footer) for the home page, the doctors directory and the static pages.
+
+    include('../layouts/guest-layout', { part: 'top', active: 'doctors' })
+      ... page content ...
+    include('../layouts/guest-layout', { part: 'bottom' })
+
+  Locals: part, active, pageTitle, login, currentUser
+%>
+<% if (part === 'top') { %>
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="bg-surface text-on-surface min-h-screen antialiased flex flex-col selection:bg-primary-fixed selection:text-on-primary-fixed">
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary-container focus:text-white focus:rounded-lg">تخطَّ إلى المحتوى</a>
+  <%- include('../partials/navbar-guest') %>
+  <main id="main" class="flex-1 w-full">
+<% } else { %>
+  </main>
+  <%- include('../partials/footer') %>
+  <%- include('../partials/modal-confirm') %>
+  <%- include('../partials/flash-messages') %>
+<% } %>

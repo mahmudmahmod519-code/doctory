@@ -1,7 +1,7 @@
 # Doctory — Admin Module Documentation  
 ## 4. Prompts
 
-Two prompts, following the team's examples: a Google Stitch master prompt that generates all 16 admin pages with one design system, and a context prompt that gets any new member or AI tool up to speed on the admin module. The colors are a proposal because the docs define no Doctory brand colors.
+Two prompts, following the team's examples: a Google Stitch master prompt that generates all 15 admin pages with one design system, and a context prompt that gets any new member or AI tool up to speed on the admin module. The colors are a proposal because the docs define no Doctory brand colors.
 
 ---
 
@@ -78,9 +78,8 @@ Login (صفحة مشتركة، مش مطلوب تصميمها) → 2FA → /admi
 11. تفاصيل حجز /admin/bookings/:id
 12. قائمة الانتظار /admin/waiting-list
 13. خدمات الدكاترة /admin/services
-14. سجل العمليات /admin/audit-log
-15. طلبات الحذف /admin/deletion-requests
-16. صفحات الأخطاء 403 / 404 / 500
+14. طلبات الحذف /admin/deletion-requests
+15. صفحات الأخطاء 403 / 404 / 500
 
 ---
 
@@ -171,7 +170,6 @@ Login (صفحة مشتركة، مش مطلوب تصميمها) → 2FA → /admi
 2. هيكل الملفات: routes/module/index.js يوجه لـ module.apis.js و module.render.js، والـ controllers في logicModels/module/.
 3. كل مسار /api/admin/* محمي بـ auth.js ثم roles(admin) من middlewares/roles.js.
 4. الـ Validation بـ Joi في validate.js، والأخطاء بـ catchError wrapper من utils/catchError.js.
-5. كل عملية كتابة للأدمن بتتسجل في audit_logs (insert-only).
 
 ## قواعد البيانات المهمة
 - مفيش جدول doctors: الدكتور = users (role = doctor) + doctor_portfolios.
@@ -184,7 +182,7 @@ Login (صفحة مشتركة، مش مطلوب تصميمها) → 2FA → /admi
 - guest: صفحات عامة
 - patient: يحجز ويشوف تقاريره
 - doctor: يدير الحجوزات والتقارير بعد موافقة الأدمن
-- admin: يتحقق من الدكاترة، يدير اليوزرز والحجوزات والخدمات وقوائم الانتظار، ويقرأ الـ Audit Log
+- admin: يتحقق من الدكاترة، يدير اليوزرز والحجوزات والخدمات وقوائم الانتظار
 
 ## قواعد حماية الأدمن
 - الأدمن مش بيغير دوره نفسه ولا يوقفها ولا يحذفها (403).

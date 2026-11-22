@@ -1,1 +1,121 @@
-<!-- TODO: implement patient dashboard view -->
+<%# GET /patient/dashboard — API: GET /api/patient/dashboard → { upcoming, queue, counts, recent_notifications } %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'dashboard', pageTitle: 'لوحة التحكم' }) %>
+
+<header data-animate="fade-up" class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+  <div>
+    <h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg text-on-surface font-extrabold">أهلاً، <%= (currentUser && currentUser.name || 'بك').split(' ')[0] %> 👋</h1>
+    <p class="font-body-md text-body-md text-on-surface-variant mt-1">إليك ملخص مواعيدك ودورك في قائمة الانتظار اليوم.</p>
+  </div>
+  <a href="/doctors" class="h-12 px-6 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md hover:shadow-lift transition-all inline-flex items-center justify-center gap-2 w-fit">
+    <span class="material-symbols-outlined text-[20px]">add_circle</span>احجز موعداً جديداً
+  </a>
+</header>
+
+<div id="dash-root" class="flex flex-col gap-6 lg:gap-8">
+  <div class="grid lg:grid-cols-3 gap-6">
+    <div class="skeleton h-64 rounded-2xl lg:col-span-2"></div>
+    <div class="skeleton h-64 rounded-2xl"></div>
+  </div>
+</div>
+
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, html, raw, fmt, statusChip, errorBlock, render } = Doctory;
+  const root = document.getElementById('dash-root');
+
+  async function load() {
+    try {
+      const { data } = await api('GET', '/api/patient/dashboard');
+      const u = data.upcoming, q = data.queue, c = data.counts || {};
+      const upcoming = u ? html`
+        <article class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-5" data-animate="fade-up">
+          <div class="flex items-center justify-between">
+            <h2 class="font-title-lg text-title-lg font-bold">موعدك القادم</h2>
+            ${statusChip(u.status)}
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-secondary-container/40 text-secondary flex items-center justify-center shrink-0"><span class="material-symbols-outlined icon-fill text-[28px]">stethoscope</span></div>
+            <div class="min-w-0">
+              <p class="font-title-md text-title-md font-bold truncate">${u.doctor}</p>
+              <p class="font-body-md text-body-md text-on-surface-variant">${u.specialty}</p>
+            </div>
+            <div class="mr-auto text-center bg-surface-container-low rounded-xl px-4 py-2">
+              <p class="font-label-sm text-label-sm text-on-surface-variant">رقمك</p>
+              <p class="num font-queue-counter text-queue-counter text-primary font-extrabold" data-count="${u.queue_number}">${fmt.ticket(u.queue_number)}</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-surface-container-low rounded-xl p-3 flex items-center gap-2.5"><span class="material-symbols-outlined text-primary text-[20px]">calendar_today</span><span class="font-body-md text-body-md">${fmt.date(u.date)}</span></div>
+            <div class="bg-surface-container-low rounded-xl p-3 flex items-center gap-2.5"><span class="material-symbols-outlined text-primary text-[20px]">schedule</span><span class="font-body-md text-body-md num">${fmt.time(u.time)}</span></div>
+          </div>
+          <div class="flex flex-wrap gap-2.5">
+            <a href="/patient/waiting-queue?booking=${u.booking_item_id}" class="h-11 px-5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md inline-flex items-center gap-2 hover:opacity-95"><span class="material-symbols-outlined text-[18px]">hourglass_top</span>تابع دورك</a>
+            <button type="button" data-cancel="${u.booking_id}" class="h-11 px-5 rounded-lg bg-surface-container-low text-error font-label-md text-label-md inline-flex items-center gap-2 hover:bg-error-container/50"><span class="material-symbols-outlined text-[18px]">event_busy</span>إلغاء الحجز</button>
+          </div>
+        </article>` : html`
+        <article class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-8 text-center flex flex-col items-center gap-3" data-animate="fade-up">
+          <span class="material-symbols-outlined text-[44px] text-outline">event_available</span>
+          <h2 class="font-title-lg text-title-lg font-bold">لا توجد مواعيد قادمة</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant max-w-sm">ابحث عن طبيب مناسب واحجز موعدك في أقل من دقيقة.</p>
+          <a href="/doctors" class="h-11 px-5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md inline-flex items-center gap-2">ابحث عن طبيب</a>
+        </article>`;
+
+      const queue = q ? html`
+        <article class="bg-gradient-to-br from-primary-container to-primary text-on-primary rounded-2xl shadow-card p-6 flex flex-col gap-4" data-animate="fade-up">
+          <div class="flex items-center gap-2"><span class="live-dot text-secondary-fixed-dim"></span><h2 class="font-title-md text-title-md font-bold">الطابور الآن</h2></div>
+          <div class="flex items-end justify-between">
+            <div><p class="font-label-sm text-label-sm opacity-80">يُخدَم حالياً</p><p class="num font-display-xl text-5xl font-extrabold" data-count="${q.current_number}">${fmt.ticket(q.current_number)}</p></div>
+            <div class="text-left"><p class="font-label-sm text-label-sm opacity-80">قبلك</p><p class="num text-3xl font-bold">${q.patients_ahead}</p></div>
+          </div>
+          <div class="h-2 rounded-full bg-white/25 overflow-hidden"><div class="h-full bg-secondary-fixed-dim rounded-full" data-progress="${Math.round((q.current_number / q.queue_number) * 100)}"></div></div>
+          <p class="font-body-md text-body-md opacity-90">الانتظار المتوقع ≈ <span class="num font-bold">${q.estimated_wait_minutes}</span> دقيقة</p>
+        </article>` : '';
+
+      const stat = (icon, label, n, tone) => html`
+        <div class="bg-surface-container-lowest rounded-xl shadow-card p-4 flex items-center gap-3" data-stagger-item>
+          <div class="w-11 h-11 rounded-lg ${tone} flex items-center justify-center"><span class="material-symbols-outlined text-[22px]">${icon}</span></div>
+          <div><p class="num text-2xl font-extrabold leading-none" data-count="${n}">${n}</p><p class="font-label-sm text-label-sm text-on-surface-variant mt-1">${label}</p></div>
+        </div>`;
+
+      const notes = (data.recent_notifications || []).map((n) => html`
+        <li class="flex items-start gap-3 py-3 ${n.is_read ? '' : 'font-semibold'}">
+          <span class="material-symbols-outlined text-primary text-[20px] mt-0.5">notifications</span>
+          <div class="min-w-0"><p class="font-body-md text-body-md">${n.title || n.message}</p><p class="font-label-sm text-label-sm text-on-surface-variant">${fmt.relative(n.created_at)}</p></div>
+        </li>`).join('');
+
+      render(root, html`
+        <div class="grid lg:grid-cols-3 gap-6">${raw(upcoming)}${raw(queue)}</div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" data-stagger>
+          ${raw(stat('event_upcoming', 'قادمة', c.upcoming || 0, 'bg-primary-fixed text-primary'))}
+          ${raw(stat('task_alt', 'مكتملة', c.completed || 0, 'bg-secondary-container/40 text-secondary'))}
+          ${raw(stat('pending', 'بانتظار الموافقة', c.pending || 0, 'bg-tertiary-fixed text-tertiary'))}
+          ${raw(stat('event_busy', 'ملغاة', c.cancelled || 0, 'bg-error-container text-error'))}
+        </div>
+        <div class="grid lg:grid-cols-3 gap-6">
+          <section class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up">
+            <div class="flex items-center justify-between mb-2"><h2 class="font-title-lg text-title-lg font-bold">آخر الإشعارات</h2><a href="/patient/notifications" class="font-label-md text-label-md text-primary hover:underline">عرض الكل</a></div>
+            <ul class="divide-y divide-surface-container-high">${raw(notes || '<li class="py-6 text-center text-on-surface-variant">لا توجد إشعارات جديدة</li>')}</ul>
+          </section>
+          <section class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-2" data-animate="fade-up">
+            <h2 class="font-title-lg text-title-lg font-bold mb-1">اختصارات</h2>
+            <a href="/doctors" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low"><span class="material-symbols-outlined text-primary">search</span>ابحث عن طبيب</a>
+            <a href="/patient/medical-history" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low"><span class="material-symbols-outlined text-primary">clinical_notes</span>السجل الطبي</a>
+            <a href="/patient/bookings" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low"><span class="material-symbols-outlined text-primary">event_note</span>كل حجوزاتي</a>
+          </section>
+        </div>`);
+      window.DoctoryMotion && window.DoctoryMotion.reveal(root);
+
+      root.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', async () => {
+        const r = await Doctory.confirm({ title: 'إلغاء الحجز', message: 'هل تريد إلغاء هذا الموعد؟', confirmText: 'نعم، إلغاء', danger: true, withReason: true });
+        if (!r.ok) return;
+        try { await api('PATCH', '/api/patient/bookings/' + b.dataset.cancel + '/cancel', { reason: r.reason }); Doctory.toast('تم إلغاء الحجز', 'success'); load(); }
+        catch (e) { Doctory.toast(e.message, 'error'); }
+      }));
+    } catch (err) { root.innerHTML = errorBlock(err, 'load'); window.load = load; }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

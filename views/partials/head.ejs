@@ -1,0 +1,35 @@
+<%#
+  Shared <head> for every page.
+  Locals: pageTitle (string), pageDescription (string, optional)
+%>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#2563eb" />
+<title><%= (typeof pageTitle !== 'undefined' && pageTitle) ? pageTitle + ' | Doctory' : 'Doctory — احجز دكتورك وتابع دورك' %></title>
+<meta name="description" content="<%= typeof pageDescription !== 'undefined' ? pageDescription : 'Doctory منصة حجز العيادات في مصر: ابحث عن طبيب معتمد، احجز موعدك، وتابع دورك في قائمة الانتظار لحظة بلحظة.' %>" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M14 8h4v6h6v4h-6v6h-4v-6H8v-4h6z' fill='white'/%3E%3C/svg%3E" />
+
+<script>
+  // Hide reveal targets before first paint; motion-init.js keeps or removes this class.
+  // Failsafe: if Motion never loads (CDN blocked) everything becomes visible after 2.5s.
+  (function (d) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    d.documentElement.classList.add('motion-ready');
+    window.__motionFailsafe = setTimeout(function () { if (!window.Motion) d.documentElement.classList.remove('motion-ready'); }, 2500);
+  })(document);
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/tw-config.js"></script>
+<link rel="stylesheet" href="/css/app.css" />
+
+<%# Motion (motion.dev) — UMD build exposes window.Motion. Pinned to major 12. %>
+<script defer src="https://cdn.jsdelivr.net/npm/motion@12/dist/motion.js"></script>
+<script defer src="/js/core.js"></script>
+<script defer src="/js/mock-api.js"></script>
+<script defer src="/js/motion-init.js"></script>

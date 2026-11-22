@@ -1,1 +1,49 @@
-<!-- TODO: implement public doctor profile view -->
+<%# GET /doctors/:id — API: GET /api/public/doctors/:id → { doctor, services, working_hours, reviews, rating }. Guest accessible. %>
+<%- include('../../layouts/guest-layout', { part: 'top', active: 'doctors', pageTitle: 'ملف الطبيب' }) %>
+<section class="max-w-5xl mx-auto px-4 lg:px-gutter-desktop py-8 lg:py-12">
+  <a href="/doctors" class="inline-flex items-center gap-1 font-label-md text-label-md text-on-surface-variant hover:text-primary mb-4"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>كل الأطباء</a>
+  <div id="p-root"><div class="skeleton h-72 rounded-2xl"></div></div>
+</section>
+<%- include('../../layouts/guest-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory;
+  const id = '<%= typeof doctorId !== "undefined" ? doctorId : "" %>' || location.pathname.split('/').filter(Boolean).pop();
+  const root = document.getElementById('p-root');
+  async function load() {
+    try {
+      const { data } = await api('GET', '/api/public/doctors/' + encodeURIComponent(id), null, { redirectOn401: false });
+      const d = data.doctor;
+      const services = (data.services || []).map((s) => html`<li class="flex items-start justify-between gap-4 p-4 rounded-xl bg-surface-container-low"><div><p class="font-title-md text-title-md font-bold">${s.title}</p><p class="font-body-md text-body-md text-on-surface-variant">${s.description || ''}</p>${s.duration_minutes ? raw(html`<p class="font-label-sm text-label-sm text-on-surface-variant mt-1"><span class="num">${s.duration_minutes}</span> دقيقة</p>`) : ''}</div><p class="num font-extrabold text-primary whitespace-nowrap">${fmt.money(s.price)}</p></li>`).join('');
+      const hours = (data.working_hours || []).map((h) => html`<li class="flex justify-between gap-3"><span>${h.day}</span><span class="num">${fmt.time(h.from)} – ${fmt.time(h.to)}</span></li>`).join('');
+      const reviews = (data.reviews || []).map((r) => html`<li class="p-4 rounded-xl bg-surface-container-low"><p class="font-label-md text-label-md font-bold flex items-center gap-1"><span class="material-symbols-outlined icon-fill text-[16px] text-warning">star</span><span class="num">${r.rating}</span> — ${r.patient_name || 'مريض'}</p><p class="font-body-md text-body-md text-on-surface-variant mt-1">${r.comment || ''}</p></li>`).join('');
+      document.title = d.doctor_name + ' | Doctory';
+      render(root, html`
+        <div class="flex flex-col gap-6">
+          <article class="bg-surface-container-lowest rounded-2xl shadow-card overflow-hidden" data-animate="fade-up">
+            <div class="h-28 bg-gradient-to-l from-primary-container to-secondary"></div>
+            <div class="px-6 pb-6 -mt-10 flex flex-col sm:flex-row sm:items-end gap-4">
+              <div class="w-24 h-24 rounded-2xl border-4 border-surface-container-lowest bg-secondary-container text-secondary flex items-center justify-center overflow-hidden">${d.profile_image ? raw(html`<img src="${d.profile_image}" alt="" class="w-full h-full object-cover" />`) : raw('<span class="material-symbols-outlined icon-fill text-[44px]">stethoscope</span>')}</div>
+              <div class="flex-1"><h1 class="font-headline-md text-headline-md font-extrabold">${d.doctor_name}</h1><p class="font-body-md text-body-md text-on-surface-variant">${d.specialty}${d.title ? ' · ' + d.title : ''}</p>
+                <p class="mt-1 font-label-md text-label-md flex flex-wrap gap-x-4 gap-y-1"><span class="flex items-center gap-1"><span class="material-symbols-outlined icon-fill text-[16px] text-warning">star</span><span class="num font-bold">${data.rating ?? d.average_rating}</span></span>${d.years_experience ? raw(html`<span><span class="num">${d.years_experience}</span> سنة خبرة</span>`) : ''}${d.sessions_count ? raw(html`<span><span class="num">${d.sessions_count}</span> جلسة</span>`) : ''}</p></div>
+              <a href="/doctors/${d.portfolio_id}/book" class="h-12 px-7 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md hover:shadow-lift inline-flex items-center justify-center gap-2">احجز موعداً<span class="material-symbols-outlined text-[20px]">arrow_back</span></a>
+            </div>
+          </article>
+          <div class="grid lg:grid-cols-3 gap-6">
+            <section class="lg:col-span-2 flex flex-col gap-6">
+              <div class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold mb-3">الخدمات والأسعار</h2><ul class="flex flex-col gap-3">${raw(services || '<li class="text-on-surface-variant">لا توجد خدمات معروضة حالياً</li>')}</ul></div>
+              <div class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold mb-3">آراء المرضى</h2><ul class="flex flex-col gap-3">${raw(reviews || '<li class="text-on-surface-variant">لا توجد تقييمات بعد</li>')}</ul></div>
+            </section>
+            <aside class="bg-surface-container-lowest rounded-2xl shadow-card p-6 h-fit flex flex-col gap-4" data-animate="fade-up">
+              <h2 class="font-title-lg text-title-lg font-bold">مواعيد العمل</h2><ul class="flex flex-col gap-2 font-body-md text-body-md">${raw(hours || '<li class="text-on-surface-variant">غير محددة</li>')}</ul>
+              ${d.address ? raw(html`<div class="flex gap-2 font-body-md text-body-md text-on-surface-variant"><span class="material-symbols-outlined text-[20px] text-primary">location_on</span>${d.address}</div>`) : ''}
+            </aside>
+          </div>
+        </div>`);
+    } catch (err) { root.innerHTML = errorBlock(err.status === 404 ? Object.assign(err, { message: 'هذا الطبيب غير متاح حالياً' }) : err, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

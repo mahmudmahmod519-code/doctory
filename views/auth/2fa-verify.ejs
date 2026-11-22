@@ -1,1 +1,82 @@
-<!-- TODO: implement 2FA verification view -->
+<%# GET /auth/2fa/verify — API: POST /api/auth/2fa/verify { token } → redirect by role (or ?next) %>
+<%- include('../layouts/main-layout', { part: 'top', pageTitle: 'التحقق بخطوتين' }) %>
+
+<section class="w-full max-w-md" data-animate="scale">
+  <div class="bg-surface-container-lowest shadow-xl rounded-2xl p-6 sm:p-9 text-center relative overflow-hidden">
+    <div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-l from-primary-container via-secondary-fixed-dim to-secondary"></div>
+    <div class="w-16 h-16 rounded-full bg-secondary-container/40 text-secondary mx-auto flex items-center justify-center mb-4" data-pop>
+      <span class="material-symbols-outlined icon-fill text-[32px]">verified_user</span>
+    </div>
+    <h1 class="font-headline-md text-headline-md text-on-surface font-extrabold">التحقق بخطوتين</h1>
+    <p class="font-body-md text-body-md text-on-surface-variant mt-1 mb-6">افتح تطبيق المصادقة وأدخل الرمز المكوّن من 6 أرقام.</p>
+
+    <form id="otp-form" novalidate>
+      <div id="otp-alert" role="alert" class="hidden mb-4 p-3 rounded-lg bg-error-container text-on-error-container font-body-md text-body-md"></div>
+      <div class="flex justify-center gap-2 sm:gap-3 mb-6" dir="ltr" id="otp-boxes">
+        <% for (let i = 0; i < 6; i++) { %>
+          <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="<%= i === 0 ? 'one-time-code' : 'off' %>"
+            aria-label="الرقم <%= i + 1 %>" class="num w-11 h-14 sm:w-12 sm:h-14 text-center text-2xl font-bold rounded-lg bg-surface-container-low border-2 border-transparent focus:border-primary-container focus:bg-surface-container-lowest outline-none transition-colors" />
+        <% } %>
+      </div>
+      <button id="otp-submit" type="submit" disabled
+        class="w-full h-12 bg-primary-container text-on-primary font-title-md text-title-md rounded-lg shadow-md disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2">
+        <span>تأكيد الرمز</span><span class="material-symbols-outlined text-[20px]">check</span>
+      </button>
+    </form>
+    <a href="/auth/login" class="inline-flex items-center gap-1 mt-5 font-label-md text-label-md text-on-surface-variant hover:text-primary">
+      <span class="material-symbols-outlined text-[18px]">arrow_forward</span>العودة لتسجيل الدخول
+    </a>
+  </div>
+</section>
+
+<%- include('../layouts/main-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const boxes = [...document.querySelectorAll('#otp-boxes input')];
+  const form = document.getElementById('otp-form');
+  const btn = document.getElementById('otp-submit');
+  const alertBox = document.getElementById('otp-alert');
+  const next = new URLSearchParams(location.search).get('next');
+  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+  const code = () => boxes.map((b) => b.value).join('');
+  const sync = () => { btn.disabled = code().length !== 6; };
+
+  boxes.forEach((b, i) => {
+    b.addEventListener('input', () => {
+      b.value = b.value.replace(/\D/g, '').slice(0, 1);
+      if (b.value && boxes[i + 1]) boxes[i + 1].focus();
+      sync();
+      if (code().length === 6) form.requestSubmit();
+    });
+    b.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !b.value && boxes[i - 1]) boxes[i - 1].focus(); });
+    b.addEventListener('paste', (e) => {
+      const t = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+      if (!t) return; e.preventDefault();
+      t.split('').forEach((ch, k) => { boxes[k].value = ch; });
+      boxes[Math.min(t.length, 5)].focus(); sync();
+      if (t.length === 6) form.requestSubmit();
+    });
+  });
+  boxes[0].focus();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (code().length !== 6 || btn.disabled && btn.dataset.busy) return;
+    Doctory.setBusy(btn, true, 'جارٍ التحقق...');
+    try {
+      const res = await Doctory.api('POST', '/api/auth/2fa/verify', { token: code() }, { redirectOn401: false });
+      const role = res.data?.user?.role;
+      const home = { admin: '/admin/dashboard', doctor: '/doctor/dashboard' }[role] || '/patient/dashboard';
+      location.href = safeNext || home;
+    } catch (err) {
+      Doctory.setBusy(btn, false); sync();
+      alertBox.textContent = err.status === 400 || err.status === 401 ? 'الرمز غير صحيح أو منتهي، حاول مرة أخرى' : err.message;
+      alertBox.classList.remove('hidden');
+      boxes.forEach((b) => { b.value = ''; }); boxes[0].focus();
+      window.DoctoryMotion && window.DoctoryMotion.animate('#otp-boxes', { x: [0, -8, 8, -4, 4, 0] }, { duration: 0.4 });
+    }
+  });
+});
+</script>
+</body>
+</html>

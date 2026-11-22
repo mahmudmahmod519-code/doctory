@@ -1,1 +1,12 @@
-<!-- TODO: implement sign up options view -->
+<%- include('../layouts/main-layout', { part: 'top', pageTitle: 'إنشاء حساب' }) %>
+<section class="w-full max-w-3xl" data-animate="fade-up">
+  <div class="text-center mb-8"><h1 class="font-headline-lg text-headline-lg-mobile sm:text-headline-lg font-extrabold">انضم إلى Doctory</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">اختر نوع حسابك للبدء.</p></div>
+  <div class="grid sm:grid-cols-2 gap-5" data-stagger>
+    <a href="/auth/register/patient" data-stagger-item data-tilt class="group bg-surface-container-lowest rounded-2xl shadow-card hover:shadow-lift transition-shadow p-7 flex flex-col gap-3 text-center items-center"><div class="w-16 h-16 rounded-2xl bg-primary-fixed text-primary flex items-center justify-center"><span class="material-symbols-outlined icon-fill text-[32px]">person</span></div><h2 class="font-title-lg text-title-lg font-bold">أنا مريض</h2><p class="font-body-md text-body-md text-on-surface-variant">احجز عند أفضل الأطباء وتابع دورك مباشرة وخزّن سجلك الطبي.</p><span class="mt-1 font-label-md text-label-md text-primary inline-flex items-center gap-1">إنشاء حساب مريض<span class="material-symbols-outlined text-[18px]">arrow_back</span></span></a>
+    <a href="/auth/register/doctor" data-stagger-item data-tilt class="group bg-surface-container-lowest rounded-2xl shadow-card hover:shadow-lift transition-shadow p-7 flex flex-col gap-3 text-center items-center"><div class="w-16 h-16 rounded-2xl bg-secondary-container/40 text-secondary flex items-center justify-center"><span class="material-symbols-outlined icon-fill text-[32px]">stethoscope</span></div><h2 class="font-title-lg text-title-lg font-bold">أنا طبيب</h2><p class="font-body-md text-body-md text-on-surface-variant">أدِر عيادتك وطابورك إلكترونياً. يتطلب توثيق بطاقة النقابة.</p><span class="mt-1 font-label-md text-label-md text-secondary inline-flex items-center gap-1">إنشاء حساب طبيب<span class="material-symbols-outlined text-[18px]">arrow_back</span></span></a>
+  </div>
+  <p class="text-center font-body-md text-body-md text-on-surface-variant mt-6">لديك حساب بالفعل؟ <a href="/auth/login" class="text-primary font-bold hover:underline">تسجيل الدخول</a></p>
+</section>
+<%- include('../layouts/main-layout', { part: 'bottom' }) %>
+</body>
+</html>

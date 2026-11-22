@@ -1,1 +1,18 @@
-<!-- TODO: implement email verification view -->
+<%# GET /auth/verify-email/:token — API: POST /api/auth/verify-email { token }; success → login, error → resend hint %>
+<%- include('../layouts/main-layout', { part: 'top', pageTitle: 'تأكيد البريد الإلكتروني' }) %>
+<section class="w-full max-w-md" data-animate="scale"><div id="box" class="bg-surface-container-lowest shadow-xl rounded-2xl p-8 text-center flex flex-col items-center gap-4" aria-live="polite">
+  <div class="skeleton w-20 h-20 rounded-full"></div><p class="font-body-md text-body-md text-on-surface-variant">جارٍ تأكيد بريدك الإلكتروني...</p>
+</div></section>
+<%- include('../layouts/main-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const token = '<%= typeof token !== "undefined" ? token : "" %>' || location.pathname.split('/').pop();
+  const box = document.getElementById('box');
+  const show = (ok, title, text, cta) => { box.innerHTML = `<div class="w-20 h-20 rounded-full ${ok ? 'bg-secondary-container/40 text-secondary' : 'bg-error-container text-error'} flex items-center justify-center"><span class="material-symbols-outlined icon-fill text-[40px]">${ok ? 'verified' : 'error'}</span></div><h1 class="font-headline-md text-headline-md font-extrabold">${title}</h1><p class="font-body-md text-body-md text-on-surface-variant">${text}</p>${cta}`; window.DoctoryMotion && window.DoctoryMotion.reveal(box); };
+  try { await Doctory.api('POST', '/api/auth/verify-email', { token }, { redirectOn401: false });
+    show(true, 'تم تأكيد بريدك', 'حسابك جاهز للاستخدام.', '<a href="/auth/login" class="h-12 px-8 rounded-lg bg-primary-container text-on-primary font-title-md inline-flex items-center">تسجيل الدخول</a>'); }
+  catch (err) { show(false, 'تعذّر التأكيد', 'الرابط غير صالح أو منتهي الصلاحية. سجّل الدخول وسنرسل لك رابطاً جديداً.', '<a href="/auth/login" class="h-12 px-8 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md inline-flex items-center">الذهاب لتسجيل الدخول</a>'); }
+});
+</script>
+</body>
+</html>

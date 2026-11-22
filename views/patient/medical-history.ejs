@@ -1,1 +1,33 @@
-<!-- TODO: implement medical history view -->
+<%# GET /patient/medical-history — API: GET /api/patient/medical-history → { chronic_diseases, allergies, medications, past_history, visits } (read-only; entries come from doctors' reports) %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'history', pageTitle: 'السجل الطبي' }) %>
+<header data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">السجل الطبي</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1 flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-secondary icon-fill">lock</span>بياناتك خاصة — يراها أنت وطبيبك المعالج فقط.</p></header>
+<div id="h-root"><div class="skeleton h-72 rounded-2xl"></div></div>
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory;
+  const root = document.getElementById('h-root');
+  const empty = (t) => `<li class="text-on-surface-variant py-2">${t}</li>`;
+  const section = (icon, title, items, tone = 'text-primary') => html`<section class="bg-surface-container-lowest rounded-2xl shadow-card p-6" data-animate="fade-up"><h2 class="font-title-lg text-title-lg font-bold flex items-center gap-2 mb-3"><span class="material-symbols-outlined ${tone}">${icon}</span>${title}</h2><ul class="flex flex-col gap-2.5">${raw(items)}</ul></section>`;
+  async function load() {
+    try {
+      const { data: d } = await api('GET', '/api/patient/medical-history');
+      const SEV = { critical: 'bg-error-container text-on-error-container', moderate: 'bg-tertiary-fixed text-tertiary', mild: 'bg-surface-container text-on-surface-variant' };
+      const chronic = (d.chronic_diseases || []).map((x) => html`<li class="p-3 rounded-xl bg-surface-container-low"><p class="font-bold">${x.name}</p><p class="font-label-md text-label-md text-on-surface-variant">منذ ${fmt.shortDate(x.since)} · ${x.status || ''}${x.doctor ? ' · ' + x.doctor : ''}</p></li>`).join('');
+      const allergies = (d.allergies || []).map((x) => html`<li class="p-3 rounded-xl bg-surface-container-low flex items-start justify-between gap-3"><div><p class="font-bold">${x.name}</p><p class="font-label-md text-label-md text-on-surface-variant">${x.reaction || ''}</p></div><span class="px-2.5 py-1 rounded-full font-label-sm text-label-sm ${SEV[x.severity] || SEV.mild}">${{ critical: 'شديدة', moderate: 'متوسطة', mild: 'خفيفة' }[x.severity] || 'خفيفة'}</span></li>`).join('');
+      const meds = (d.medications || []).map((x) => html`<li class="p-3 rounded-xl bg-surface-container-low"><p class="font-bold">${x.name} ${x.ongoing ? raw('<span class="mr-2 px-2 py-0.5 rounded-full bg-secondary-container/40 text-secondary font-label-sm">مستمر</span>') : ''}</p><p class="font-label-md text-label-md text-on-surface-variant">${x.dosage} · ${x.frequency}${x.doctor ? ' · ' + x.doctor : ''}</p></li>`).join('');
+      const past = (d.past_history || []).map((x) => html`<li class="p-3 rounded-xl bg-surface-container-low"><p class="font-bold">${x.title}</p><p class="font-label-md text-label-md text-on-surface-variant">${fmt.shortDate(x.date)}${x.note ? ' · ' + x.note : ''}</p></li>`).join('');
+      const visits = (d.visits || []).map((x) => html`<li class="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low"><div class="min-w-0"><p class="font-bold">${x.doctor} <span class="font-normal text-on-surface-variant">· ${x.specialty}</span></p><p class="font-label-md text-label-md text-on-surface-variant">${fmt.shortDate(x.date)} · ${x.diagnosis || ''}</p></div>${x.report_id ? raw(html`<a href="/patient/medical-report?report=${x.report_id}" class="h-9 px-3 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md inline-flex items-center shrink-0">التقرير</a>`) : ''}</li>`).join('');
+      render(root, html`<div class="grid lg:grid-cols-2 gap-6">
+        ${raw(section('monitor_heart', 'الأمراض المزمنة', chronic || empty('لا توجد أمراض مزمنة مسجّلة')))}
+        ${raw(section('warning', 'الحساسية', allergies || empty('لا توجد حساسية مسجّلة'), 'text-error'))}
+        ${raw(section('medication', 'الأدوية الحالية', meds || empty('لا توجد أدوية حالية')))}
+        ${raw(section('history', 'التاريخ المرضي السابق', past || empty('لا يوجد تاريخ مرضي مسجّل')))}
+        <div class="lg:col-span-2">${raw(section('clinical_notes', 'زياراتي وتقاريري', visits || empty('لا توجد زيارات سابقة')))}</div></div>`);
+    } catch (err) { root.innerHTML = errorBlock(err, 'load'); }
+  }
+  window.load = load; load();
+});
+</script>
+</body>
+</html>

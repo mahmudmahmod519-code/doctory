@@ -13,7 +13,11 @@
     "migrate:revert": "node scripts/migrate.js --revert",
     "seed": "node scripts/seed.js",
     "lint": "echo \"Linter not configured yet\" && exit 0",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:unit": "jest test/unit",
+    "test:integration": "jest test/integration",
+    "test:e2e": "jest test/e2e",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -36,7 +40,9 @@
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "jest": "^30.0.0",
+    "supertest": "^7.1.0"
   },
   "allowScripts": {
     "bcrypt@6.0.0": true

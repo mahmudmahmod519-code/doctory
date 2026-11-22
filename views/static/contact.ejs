@@ -1,1 +1,28 @@
-<!-- TODO: implement contact view -->
+<%- include('../layouts/guest-layout', { part: 'top', active: 'contact', pageTitle: 'اتصل بنا' }) %>
+<section class="max-w-3xl mx-auto px-4 lg:px-gutter-desktop py-12 lg:py-16">
+  <header class="mb-8" data-animate="fade-up"><h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">اتصل بنا</h1><p class="font-body-md text-body-md text-on-surface-variant mt-1">نرد عادةً خلال يوم عمل.</p></header>
+  <form id="c" class="bg-surface-container-lowest rounded-2xl shadow-card p-6 sm:p-8 grid sm:grid-cols-2 gap-4" novalidate data-animate="fade-up">
+    <div class="flex flex-col gap-1.5"><label for="name" class="font-label-md text-label-md font-semibold">الاسم</label><input id="name" name="name" class="field" /><p data-error-for="name" class="hidden font-label-sm text-label-sm text-error"></p></div>
+    <div class="flex flex-col gap-1.5"><label for="email" class="font-label-md text-label-md font-semibold">البريد الإلكتروني</label><input id="email" name="email" type="email" dir="ltr" class="field" /><p data-error-for="email" class="hidden font-label-sm text-label-sm text-error"></p></div>
+    <div class="sm:col-span-2 flex flex-col gap-1.5"><label for="message" class="font-label-md text-label-md font-semibold">رسالتك</label><textarea id="message" name="message" rows="5" class="field"></textarea><p data-error-for="message" class="hidden font-label-sm text-label-sm text-error"></p></div>
+    <button class="sm:col-span-2 h-12 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md shadow-md">إرسال</button>
+  </form>
+</section>
+<%- include('../layouts/guest-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const f = document.getElementById('c');
+  f.addEventListener('submit', function (e) {
+    e.preventDefault(); const er = {};
+    if (f.name.value.trim().length < 2) er.name = 'أدخل اسمك';
+    if (!/^\S+@\S+\.\S+$/.test(f.email.value.trim())) er.email = 'بريد إلكتروني غير صحيح';
+    if (f.message.value.trim().length < 10) er.message = 'اكتب رسالة لا تقل عن 10 أحرف';
+    Doctory.showFieldErrors(f, er); if (Object.keys(er).length) return;
+    // No contact API is specified in the backend docs yet — open the user's mail client as a working fallback.
+    location.href = 'mailto:support@doctory.app?subject=' + encodeURIComponent('رسالة من ' + f.name.value.trim()) + '&body=' + encodeURIComponent(f.message.value.trim());
+    Doctory.toast('تم فتح تطبيق البريد لإرسال رسالتك', 'info');
+  });
+});
+</script>
+</body>
+</html>

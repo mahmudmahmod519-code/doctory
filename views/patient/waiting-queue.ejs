@@ -1,1 +1,81 @@
-<!-- TODO: implement waiting queue view -->
+<%# GET /patient/waiting-queue?booking=<booking_item_id> — polls GET /api/patient/queue/:id every 8s; when it is the patient's turn → /patient/turn-notification %>
+<%- include('../layouts/patient-layout', { part: 'top', active: 'queue', pageTitle: 'قائمة الانتظار' }) %>
+
+<header data-animate="fade-up">
+  <h1 class="font-headline-lg text-headline-lg-mobile lg:text-headline-lg font-extrabold">قائمة الانتظار</h1>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1 flex items-center gap-2"><span class="live-dot text-secondary"></span>يتم التحديث تلقائياً</p>
+</header>
+
+<div id="q-root" aria-live="polite"><div class="skeleton h-80 rounded-2xl"></div></div>
+
+<%- include('../layouts/patient-layout', { part: 'bottom' }) %>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const { api, html, raw, fmt, errorBlock, render } = Doctory;
+  const root = document.getElementById('q-root');
+  let id = new URLSearchParams(location.search).get('booking') || '<%= typeof bookingItemId !== "undefined" && bookingItemId ? bookingItemId : "" %>';
+  let timer, first = true, lastCurrent = null;
+
+  function view(d) {
+    const pct = Math.max(4, Math.min(100, Math.round(((d.current_number) / d.queue_number) * 100)));
+    const total = d.total_today || d.queue_number;
+    return html`
+      <div class="grid lg:grid-cols-3 gap-6">
+        <section class="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-card p-6 lg:p-8 flex flex-col gap-6">
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div class="rounded-2xl bg-primary-container text-on-primary p-5">
+              <p class="font-label-md text-label-md opacity-80">رقمك</p>
+              <p class="num font-display-xl text-6xl font-extrabold" id="my-no">${fmt.ticket(d.queue_number)}</p>
+            </div>
+            <div class="rounded-2xl bg-secondary-container/40 text-on-secondary-container p-5">
+              <p class="font-label-md text-label-md">يُخدَم الآن</p>
+              <p class="num font-display-xl text-6xl font-extrabold" id="cur-no">${fmt.ticket(d.current_number)}</p>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between font-label-md text-label-md text-on-surface-variant mb-2"><span>تقدّمك في الطابور</span><span class="num">${pct}%</span></div>
+            <div class="h-3 rounded-full bg-surface-container-high overflow-hidden"><div class="h-full rounded-full bg-gradient-to-l from-secondary to-primary-container" data-progress="${pct}"></div></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-surface-container-low rounded-xl p-4"><p class="font-label-sm text-label-sm text-on-surface-variant">مرضى قبلك</p><p class="num text-3xl font-extrabold">${d.patients_ahead}</p></div>
+            <div class="bg-surface-container-low rounded-xl p-4"><p class="font-label-sm text-label-sm text-on-surface-variant">الانتظار المتوقع</p><p class="text-3xl font-extrabold"><span class="num">${d.estimated_wait_minutes}</span> <span class="text-base font-semibold">دقيقة</span></p></div>
+          </div>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">أرقام المرضى فقط — لا تُعرض أي بيانات طبية. اليوم: <span class="num">${d.completed_today ?? 0}</span> من <span class="num">${total}</span> تمت خدمتهم.</p>
+        </section>
+        <aside class="bg-surface-container-lowest rounded-2xl shadow-card p-6 flex flex-col gap-4">
+          <h2 class="font-title-lg text-title-lg font-bold">تفاصيل الموعد</h2>
+          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-full bg-secondary-container/40 text-secondary flex items-center justify-center"><span class="material-symbols-outlined icon-fill">stethoscope</span></div>
+            <div><p class="font-title-md text-title-md font-bold">${d.doctor?.name}</p><p class="font-body-md text-body-md text-on-surface-variant">${d.doctor?.specialty}</p></div></div>
+          <ul class="flex flex-col gap-3 font-body-md text-body-md">
+            <li class="flex gap-2.5"><span class="material-symbols-outlined text-primary text-[20px]">location_on</span>${d.doctor?.address}</li>
+            <li class="flex gap-2.5"><span class="material-symbols-outlined text-primary text-[20px]">calendar_today</span>${fmt.date(d.appointment_date)} — <span class="num">${fmt.time(d.appointment_time)}</span></li>
+            ${d.doctor?.phone ? raw(html`<li class="flex gap-2.5"><span class="material-symbols-outlined text-primary text-[20px]">call</span><a class="num text-primary" dir="ltr" href="tel:${d.doctor.phone}">${d.doctor.phone}</a></li>`) : ''}
+          </ul>
+          <a href="/patient/dashboard" class="mt-auto h-11 rounded-lg bg-surface-container-low hover:bg-surface-container font-label-md text-label-md inline-flex items-center justify-center gap-2"><span class="material-symbols-outlined text-[18px]">arrow_forward</span>لوحة التحكم</a>
+        </aside>
+      </div>`;
+  }
+
+  async function tick() {
+    try {
+      if (!id) {
+        const { data: dash } = await api('GET', '/api/patient/dashboard');
+        id = dash.queue?.booking_item_id;
+        if (!id) { render(root, Doctory.stateBlock({ icon: 'hourglass_empty', title: 'لا يوجد دور نشط الآن', text: 'عند قبول حجزك اليوم ستتابع دورك هنا مباشرة.', action: '<a href="/doctors" class="mt-1 h-11 px-5 rounded-lg bg-primary-container text-on-primary font-label-md inline-flex items-center">احجز موعداً</a>' })); clearInterval(timer); return; }
+      }
+      const { data } = await api('GET', '/api/patient/queue/' + encodeURIComponent(id));
+      if (data.status === 'rejected' || data.status === 'cancelled') { location.href = '/patient/appointment-cancelled?reason=' + (data.status === 'rejected' ? 'doctor_rejected' : 'system') + '&booking=' + id; return; }
+      if (data.current_number >= data.queue_number) { location.href = '/patient/turn-notification?booking=' + id; return; }
+      if (first || lastCurrent !== data.current_number) { render(root, view(data)); window.DoctoryMotion && window.DoctoryMotion.pulse && window.DoctoryMotion.pulse('#cur-no'); }
+      first = false; lastCurrent = data.current_number;
+    } catch (err) {
+      if (first) root.innerHTML = errorBlock(err, 'tick');
+    }
+  }
+  window.tick = tick; tick();
+  timer = setInterval(() => { if (!document.hidden) tick(); }, 8000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+});
+</script>
+</body>
+</html>

@@ -1,1 +1,15 @@
-<!-- TODO: implement flash messages view -->
+<%#
+  Toast root + optional server-side flash.
+  Locals (optional): flash = { type: 'success'|'error'|'info'|'warning', message }
+  Query fallback: ?flash=<message>&flash_type=<type> (used after redirects, e.g. registration → login).
+%>
+<div id="toast-root" aria-live="polite"></div>
+<% if (typeof flash !== 'undefined' && flash && flash.message) { %>
+  <script>document.addEventListener('DOMContentLoaded', function () { Doctory.toast(<%- JSON.stringify(String(flash.message)).replace(/</g, '\\u003c') %>, <%- JSON.stringify(String(flash.type || 'info')).replace(/</g, '\\u003c') %>); });</script>
+<% } %>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var q = new URLSearchParams(location.search);
+    if (q.get('flash')) Doctory.toast(q.get('flash'), q.get('flash_type') || 'info');
+  });
+</script>
